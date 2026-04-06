@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { ArrowLeft } from "lucide-react";
 import { getAllQuotes } from "@/lib/quotesApi";
 import { rankSpeakers } from "@/lib/utils";
-import { useKeyboardHeight } from "@/hooks/useKeyboardHeight";
+import { useVisualViewport } from "@/hooks/useVisualViewport";
 
 interface Props {
   imageDataUrl: string | null;
@@ -23,7 +23,7 @@ export default function PersonStep({
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-  const keyboardHeight = useKeyboardHeight();
+  const { top, height } = useVisualViewport();
 
   useEffect(() => {
     const t = setTimeout(() => inputRef.current?.focus(), 80);
@@ -45,12 +45,16 @@ export default function PersonStep({
   };
 
   const hasName = name.trim().length > 0;
-  const btnBottom = keyboardHeight > 0 ? keyboardHeight + 8 : 32;
 
   return (
-    <div className="absolute inset-0 bg-white">
-      {/* Top stack — locked to top, never moves */}
-      <div className="px-5 pt-14">
+    // Container tracks the visual viewport exactly — stays locked to the
+    // visible area whether or not the keyboard is open.
+    <div
+      style={{ position: "fixed", left: 0, right: 0, top, height }}
+      className="bg-white flex flex-col overflow-hidden"
+    >
+      {/* Top stack — always visible at the top of the visual viewport */}
+      <div className="px-5 pt-14 shrink-0">
         <button
           onClick={onBack}
           disabled={saving}
@@ -96,14 +100,16 @@ export default function PersonStep({
         )}
       </div>
 
-      {/* Save — fades in on first keystroke, hugs top of keyboard */}
+      {/* Pushes button to the bottom of the visible area */}
+      <div className="flex-1 min-h-0" />
+
+      {/* Save — fades in on first keystroke, always at visible bottom */}
       <div
-        className="fixed left-0 right-0 px-5"
+        className="px-5 pb-8 shrink-0"
         style={{
-          bottom: btnBottom,
           opacity: hasName ? 1 : 0,
           pointerEvents: hasName ? "auto" : "none",
-          transition: "bottom 0.3s ease-out, opacity 0.2s ease-out",
+          transition: "opacity 0.2s ease-out",
         }}
       >
         <button
