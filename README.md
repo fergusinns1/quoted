@@ -76,3 +76,4 @@ lib/
 - Real database for quotes
 - Share flow
 - Quote detail / edit screens
+# quoted
