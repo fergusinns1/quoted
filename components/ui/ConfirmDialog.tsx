@@ -18,7 +18,7 @@ export default function ConfirmDialog({
   onCancel,
 }: ConfirmDialogProps) {
   return (
-    <div className="absolute inset-0 z-[55] flex items-end justify-center">
+    <div className="fixed inset-0 z-[55] flex items-end justify-center">
       {/* Backdrop */}
       <button
         className="absolute inset-0 bg-black/40 backdrop-blur-sm cursor-default"

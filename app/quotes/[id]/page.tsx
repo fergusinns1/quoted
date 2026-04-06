@@ -11,7 +11,7 @@ import {
   Trash2,
   BookOpen,
 } from "lucide-react";
-import { getQuoteById, updateQuote, deleteQuote } from "@/lib/db";
+import { getQuoteById, updateQuote, deleteQuote } from "@/lib/quotesApi";
 import { QuoteRecord } from "@/lib/types";
 import {
   gradientForId,

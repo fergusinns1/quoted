@@ -4,7 +4,8 @@ import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useCaptureFlow } from "@/context/CaptureContext";
 import { useToast } from "@/context/ToastContext";
-import { saveQuote } from "@/lib/db";
+import { useAuth } from "@/context/AuthContext";
+import { saveQuote } from "@/lib/quotesApi";
 import { compressImage } from "@/lib/imageUtils";
 import CameraStep from "./CameraStep";
 import ConfirmStep from "./ConfirmStep";
@@ -17,6 +18,7 @@ export default function CaptureFlow() {
   const { isOpen, closeCapture } = useCaptureFlow();
   const router = useRouter();
   const showToast = useToast();
+  const { user } = useAuth();
 
   const [step, setStep] = useState<Step>("camera");
   const [imageDataUrl, setImageDataUrl] = useState<string | null>(null);
@@ -55,6 +57,13 @@ export default function CaptureFlow() {
 
   const handleSave = useCallback(
     async (speaker: string) => {
+      if (!user) {
+        reset();
+        closeCapture();
+        router.push("/auth/signin");
+        return;
+      }
+
       const record = {
         id: crypto.randomUUID(),
         text: quoteText,
@@ -63,22 +72,24 @@ export default function CaptureFlow() {
         createdAt: Date.now(),
       };
 
-      await saveQuote(record);
-
-      window.dispatchEvent(new Event("quotd:changed"));
-
-      reset();
-      closeCapture();
-      showToast("Quote saved");
-      router.push("/quotes");
+      try {
+        await saveQuote(record, user.id);
+        window.dispatchEvent(new Event("quotd:changed"));
+        reset();
+        closeCapture();
+        showToast("Quote saved");
+        router.push("/quotes");
+      } catch {
+        showToast("Failed to save quote. Please try again.", "error");
+      }
     },
-    [quoteText, imageDataUrl, reset, closeCapture, router, showToast]
+    [quoteText, imageDataUrl, user, reset, closeCapture, router, showToast]
   );
 
   if (!isOpen) return null;
 
   return (
-    <div className="absolute inset-0 z-50">
+    <div className="fixed inset-0 z-50">
       {step === "camera" && (
         <CameraStep onCapture={handleImageCaptured} onClose={handleClose} />
       )}

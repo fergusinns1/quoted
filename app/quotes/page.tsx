@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
 import { useCaptureFlow } from "@/context/CaptureContext";
-import { getAllQuotes } from "@/lib/db";
+import { useAuth } from "@/context/AuthContext";
+import { getAllQuotes } from "@/lib/quotesApi";
 import { QuoteRecord } from "@/lib/types";
 import {
   SortOrder,
@@ -16,18 +18,28 @@ import QuoteCard from "@/components/ui/QuoteCard";
 
 export default function QuotesPage() {
   const { openCapture } = useCaptureFlow();
+  const { user, loading: authLoading, signOut } = useAuth();
+  const router = useRouter();
 
   const [quotes, setQuotes] = useState<QuoteRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
   const [sortOrder, setSortOrder] = useState<SortOrder>("newest");
   const [selectedPerson, setSelectedPerson] = useState("All");
 
+  // Redirect to sign-in if not authenticated once auth has resolved
+  useEffect(() => {
+    if (!authLoading && !user) router.replace("/auth/signin");
+  }, [authLoading, user, router]);
+
   const loadQuotes = useCallback(() => {
+    if (!user) return;
+    setFetchError(false);
     getAllQuotes()
       .then((q) => setQuotes(q))
-      .catch(() => setQuotes([]))
+      .catch(() => setFetchError(true))
       .finally(() => setLoading(false));
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     loadQuotes();
@@ -68,15 +80,19 @@ export default function QuotesPage() {
             </p>
           )}
         </div>
-        {/* Profile avatar — functionless for now */}
-        <div className="w-10 h-10 rounded-full overflow-hidden bg-neutral-200 shrink-0 mt-1">
+        {/* Avatar — long press or tap shows sign out */}
+        <button
+          onClick={signOut}
+          aria-label="Sign out"
+          className="w-10 h-10 rounded-full overflow-hidden bg-neutral-200 shrink-0 mt-1 active:opacity-70 transition-opacity"
+        >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/HomeImage.png"
             alt="Profile"
             className="w-full h-full object-cover object-top"
           />
-        </div>
+        </button>
       </div>
 
       {/* Filter row */}
@@ -136,6 +152,17 @@ export default function QuotesPage() {
         {loading ? (
           <div className="flex items-center justify-center py-24">
             <div className="w-6 h-6 rounded-full border-2 border-neutral-200 border-t-neutral-600 animate-spin" />
+          </div>
+        ) : fetchError ? (
+          <div className="flex flex-col items-center justify-center py-24 px-10 text-center gap-4">
+            <p className="text-neutral-700 font-semibold">Couldn&apos;t load quotes</p>
+            <p className="text-neutral-400 text-sm">Check your connection and try again.</p>
+            <button
+              onClick={loadQuotes}
+              className="rounded-full px-6 py-3 bg-neutral-900 text-white font-semibold text-sm active:scale-[0.97] transition-transform"
+            >
+              Retry
+            </button>
           </div>
         ) : quotes.length === 0 ? (
           <EmptyState onAdd={openCapture} />

@@ -13,7 +13,7 @@ export default function BottomNav() {
   if (isOpen || pathname) return null;
 
   return (
-    <nav className="absolute bottom-0 left-0 right-0 z-40 flex justify-center pb-6 pointer-events-none">
+    <nav className="fixed bottom-0 left-0 right-0 z-40 flex justify-center pb-6 pointer-events-none">
       <div className="flex items-center gap-2 rounded-full bg-white shadow-[0_4px_24px_rgba(0,0,0,0.12),0_1px_4px_rgba(0,0,0,0.06)] px-3 py-2.5 pointer-events-auto">
         <Link
           href="/"

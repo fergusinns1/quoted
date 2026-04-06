@@ -1,10 +1,28 @@
 "use client";
 
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useCaptureFlow } from "@/context/CaptureContext";
+import { useAuth } from "@/context/AuthContext";
 
 export default function HomePage() {
   const { openCapture } = useCaptureFlow();
+  const { user, loading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!loading && !user) router.replace("/auth/signin");
+  }, [loading, user, router]);
+
+  // Show spinner while auth resolves or before redirect fires
+  if (loading || !user) {
+    return (
+      <div className="absolute inset-0 bg-white flex items-center justify-center">
+        <div className="w-6 h-6 rounded-full border-2 border-neutral-200 border-t-neutral-600 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="absolute inset-0 bg-white flex flex-col">
@@ -39,7 +57,6 @@ export default function HomePage() {
             borderRadius: 160,
           }}
         >
-          {/* Photo */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/HomeImage.png"
@@ -47,11 +64,7 @@ export default function HomePage() {
             className="absolute inset-0 w-full h-full object-cover"
             draggable={false}
           />
-
-          {/* Subtle dark scrim */}
           <div className="absolute inset-0 bg-black/15" />
-
-          {/* "Capture Quote" pill — centered inside the image */}
           <div className="absolute inset-0 flex items-center justify-center">
             <span
               className="bg-white text-neutral-900 font-semibold text-[15px] px-6 py-3 shadow-sm"

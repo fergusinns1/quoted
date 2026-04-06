@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { ArrowLeft } from "lucide-react";
-import { getAllQuotes } from "@/lib/db";
+import { getAllQuotes } from "@/lib/quotesApi";
 import { rankSpeakers } from "@/lib/utils";
 
 interface Props {

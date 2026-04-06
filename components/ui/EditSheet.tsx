@@ -36,7 +36,7 @@ export default function EditSheet({
   };
 
   return (
-    <div className="absolute inset-0 z-[55] flex items-end">
+    <div className="fixed inset-0 z-[55] flex items-end">
       {/* Backdrop */}
       <button
         className="absolute inset-0 bg-black/50 backdrop-blur-sm cursor-default"
