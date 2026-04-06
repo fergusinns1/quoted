@@ -15,6 +15,7 @@ import {
   X,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { useTheme } from "@/context/ThemeContext";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/context/ToastContext";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
@@ -25,6 +26,7 @@ const AVATAR_BUCKET = "avatars";
 export default function ProfilePage() {
   const router = useRouter();
   const { user, signOut } = useAuth();
+  const { theme, setTheme } = useTheme();
   const showToast = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -42,7 +44,6 @@ export default function ProfilePage() {
   const [emailSaving, setEmailSaving] = useState(false);
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [darkMode] = useState(false);
 
   // ── Initialise from current user ────────────────────────────────────────────
   useEffect(() => {
@@ -157,17 +158,17 @@ export default function ProfilePage() {
   const currentEmail = user?.email ?? "—";
 
   return (
-    <div className="absolute inset-0 bg-white flex flex-col">
+    <div className="absolute inset-0 bg-white dark:bg-neutral-950 flex flex-col">
       {/* Header */}
       <div className="flex items-center gap-4 px-5 pt-14 pb-4 shrink-0">
         <button
           onClick={() => router.back()}
           aria-label="Go back"
-          className="w-9 h-9 rounded-full bg-neutral-100 flex items-center justify-center shrink-0"
+          className="w-9 h-9 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center shrink-0"
         >
-          <ArrowLeft size={16} strokeWidth={2} className="text-neutral-600" />
+          <ArrowLeft size={16} strokeWidth={2} className="text-neutral-600 dark:text-neutral-300" />
         </button>
-        <h1 className="text-neutral-900 text-[22px] font-bold tracking-tight">
+        <h1 className="text-neutral-900 dark:text-white text-[22px] font-bold tracking-tight">
           Profile
         </h1>
       </div>
@@ -207,7 +208,7 @@ export default function ProfilePage() {
               )}
             </div>
           </div>
-          <p className="text-neutral-400 text-[13px]">Tap to change photo</p>
+          <p className="text-neutral-400 dark:text-neutral-500 text-[13px]">Tap to change photo</p>
           <input
             ref={fileInputRef}
             type="file"
@@ -264,18 +265,24 @@ export default function ProfilePage() {
         <Section label="Appearance">
           <div className="flex items-center justify-between px-4 py-3.5">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-neutral-100 flex items-center justify-center shrink-0">
-                <Moon size={16} className="text-neutral-500" />
+              <div className="w-8 h-8 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center shrink-0">
+                <Moon size={16} className="text-neutral-500 dark:text-neutral-400" />
               </div>
-              <span className="text-neutral-800 text-[15px]">Dark mode</span>
+              <span className="text-neutral-800 dark:text-neutral-100 text-[15px]">Dark mode</span>
             </div>
             <button
               role="switch"
-              aria-checked={darkMode}
-              onClick={() => showToast("Dark mode coming soon", "info")}
-              className="relative w-11 h-6 rounded-full bg-neutral-200 transition-colors duration-200"
+              aria-checked={theme === "dark"}
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${
+                theme === "dark" ? "bg-neutral-900" : "bg-neutral-200"
+              }`}
             >
-              <span className="absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform duration-200" />
+              <span
+                className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform duration-200 ${
+                  theme === "dark" ? "translate-x-5" : "translate-x-0.5"
+                }`}
+              />
             </button>
           </div>
         </Section>
@@ -284,12 +291,12 @@ export default function ProfilePage() {
         <Section label="Account actions">
           <button
             onClick={handleSignOut}
-            className="w-full flex items-center gap-3 px-4 py-3.5 active:bg-neutral-50 transition-colors"
+            className="w-full flex items-center gap-3 px-4 py-3.5 active:bg-neutral-50 dark:active:bg-neutral-800 transition-colors"
           >
             <div className="w-8 h-8 rounded-full bg-neutral-100 flex items-center justify-center shrink-0">
               <LogOut size={16} className="text-neutral-500" />
             </div>
-            <span className="text-neutral-800 text-[15px] flex-1 text-left">Sign out</span>
+            <span className="text-neutral-800 dark:text-neutral-100 text-[15px] flex-1 text-left">Sign out</span>
           </button>
 
           <div className="h-px bg-neutral-100 mx-4" />
@@ -305,7 +312,7 @@ export default function ProfilePage() {
           </button>
         </Section>
 
-        <p className="text-center text-neutral-300 text-[11px] pb-4">
+        <p className="text-center text-neutral-300 dark:text-neutral-700 text-[11px] pb-4">
           Quotd · {new Date().getFullYear()}
         </p>
       </div>
@@ -337,10 +344,10 @@ export default function ProfilePage() {
 function Section({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="mb-6 px-5">
-      <p className="text-neutral-400 text-[11px] font-semibold uppercase tracking-wider mb-2">
+      <p className="text-neutral-400 dark:text-neutral-500 text-[11px] font-semibold uppercase tracking-wider mb-2">
         {label}
       </p>
-      <div className="rounded-2xl bg-neutral-50 overflow-hidden divide-y divide-neutral-100">
+      <div className="rounded-2xl bg-neutral-50 dark:bg-neutral-900 overflow-hidden divide-y divide-neutral-100 dark:divide-neutral-800">
         {children}
       </div>
     </div>
@@ -363,16 +370,16 @@ function SettingsRow({
   return (
     <button
       onClick={onTap}
-      className="w-full flex items-center gap-3 px-4 py-3.5 active:bg-neutral-100 transition-colors text-left"
+      className="w-full flex items-center gap-3 px-4 py-3.5 active:bg-neutral-100 dark:active:bg-neutral-800 transition-colors text-left"
     >
-      <div className="w-8 h-8 rounded-full bg-white border border-neutral-100 flex items-center justify-center shrink-0 shadow-sm">
+      <div className="w-8 h-8 rounded-full bg-white dark:bg-neutral-800 border border-neutral-100 dark:border-neutral-700 flex items-center justify-center shrink-0 shadow-sm">
         {icon}
       </div>
-      <span className="text-neutral-800 text-[15px] flex-1">{label}</span>
+      <span className="text-neutral-800 dark:text-neutral-100 text-[15px] flex-1">{label}</span>
       {value && (
-        <span className="text-neutral-400 text-[13px] truncate max-w-[130px]">{value}</span>
+        <span className="text-neutral-400 dark:text-neutral-500 text-[13px] truncate max-w-[130px]">{value}</span>
       )}
-      <ChevronRight size={14} className="text-neutral-300 shrink-0" />
+      <ChevronRight size={14} className="text-neutral-300 dark:text-neutral-600 shrink-0" />
     </button>
   );
 }
@@ -409,24 +416,24 @@ function InlineEdit({
         placeholder={placeholder}
         inputMode={inputMode}
         disabled={saving}
-        className="flex-1 bg-transparent text-neutral-800 text-[15px] placeholder-neutral-300 focus:outline-none"
+        className="flex-1 bg-transparent text-neutral-800 dark:text-neutral-100 text-[15px] placeholder-neutral-300 dark:placeholder-neutral-600 focus:outline-none"
       />
       <button
         onClick={onCancel}
         disabled={saving}
-        className="w-7 h-7 rounded-full bg-neutral-200 flex items-center justify-center shrink-0"
+        className="w-7 h-7 rounded-full bg-neutral-200 dark:bg-neutral-700 flex items-center justify-center shrink-0"
       >
-        <X size={13} className="text-neutral-500" />
+        <X size={13} className="text-neutral-500 dark:text-neutral-300" />
       </button>
       <button
         onClick={onSave}
         disabled={saving || !value.trim()}
-        className="w-7 h-7 rounded-full bg-neutral-900 flex items-center justify-center shrink-0 disabled:opacity-30"
+        className="w-7 h-7 rounded-full bg-neutral-900 dark:bg-white flex items-center justify-center shrink-0 disabled:opacity-30"
       >
         {saving ? (
           <div className="w-3 h-3 rounded-full border-2 border-white/30 border-t-white animate-spin" />
         ) : (
-          <Check size={13} className="text-white" strokeWidth={2.5} />
+          <Check size={13} className="text-white dark:text-neutral-900" strokeWidth={2.5} />
         )}
       </button>
     </div>

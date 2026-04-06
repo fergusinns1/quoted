@@ -10,7 +10,7 @@ export default function MobileShell({
      * causing document scroll — all scrolling happens inside content areas.
      */
     <div
-      className="relative w-full overflow-hidden bg-white"
+      className="relative w-full overflow-hidden bg-white dark:bg-neutral-950"
       style={{ height: "100dvh" }}
     >
       {children}

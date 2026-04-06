@@ -18,17 +18,17 @@ export default function HomePage() {
   // Show spinner while auth resolves or before redirect fires
   if (loading || !user) {
     return (
-      <div className="absolute inset-0 bg-white flex items-center justify-center">
-        <div className="w-6 h-6 rounded-full border-2 border-neutral-200 border-t-neutral-600 animate-spin" />
+      <div className="absolute inset-0 bg-white dark:bg-neutral-950 flex items-center justify-center">
+        <div className="w-6 h-6 rounded-full border-2 border-neutral-200 dark:border-neutral-700 border-t-neutral-600 dark:border-t-neutral-300 animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="absolute inset-0 bg-white flex flex-col">
+    <div className="absolute inset-0 bg-white dark:bg-neutral-950 flex flex-col">
       {/* Top bar */}
       <div className="flex items-center justify-between px-6 pt-14 pb-2 shrink-0">
-        <h1 className="text-neutral-900 text-[28px] font-bold tracking-tight leading-tight">
+        <h1 className="text-neutral-900 dark:text-white text-[28px] font-bold tracking-tight leading-tight">
           Let&apos;s get Quoting.
         </h1>
         <Link

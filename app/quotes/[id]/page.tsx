@@ -90,21 +90,21 @@ export default function QuoteDetailPage() {
 
   if (status === "loading") {
     return (
-      <div className="absolute inset-0 bg-white flex items-center justify-center">
-        <div className="w-6 h-6 rounded-full border-2 border-neutral-200 border-t-neutral-600 animate-spin" />
+      <div className="absolute inset-0 bg-white dark:bg-neutral-950 flex items-center justify-center">
+        <div className="w-6 h-6 rounded-full border-2 border-neutral-200 dark:border-neutral-700 border-t-neutral-600 dark:border-t-neutral-300 animate-spin" />
       </div>
     );
   }
 
   if (status === "not-found" || !quote) {
     return (
-      <div className="absolute inset-0 bg-white flex flex-col items-center justify-center px-10 text-center gap-5">
-        <div className="w-16 h-16 rounded-full bg-neutral-100 flex items-center justify-center">
+      <div className="absolute inset-0 bg-white dark:bg-neutral-950 flex flex-col items-center justify-center px-10 text-center gap-5">
+        <div className="w-16 h-16 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
           <BookOpen size={24} className="text-neutral-400" strokeWidth={1.6} />
         </div>
         <div>
-          <p className="text-neutral-700 font-semibold mb-1">Quote not found</p>
-          <p className="text-neutral-400 text-sm">This quote may have been deleted.</p>
+          <p className="text-neutral-700 dark:text-neutral-200 font-semibold mb-1">Quote not found</p>
+          <p className="text-neutral-400 dark:text-neutral-500 text-sm">This quote may have been deleted.</p>
         </div>
         <button
           onClick={() => router.push("/quotes")}

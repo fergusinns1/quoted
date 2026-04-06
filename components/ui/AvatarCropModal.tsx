@@ -190,16 +190,16 @@ export default function AvatarCropModal({ file, onConfirm, onCancel }: Props) {
 
   return (
     <div className="fixed inset-0 z-[70] flex flex-col items-center justify-center bg-black/70 backdrop-blur-sm">
-      <div className="bg-white rounded-3xl overflow-hidden w-[340px] flex flex-col shadow-2xl">
+      <div className="bg-white dark:bg-neutral-900 rounded-3xl overflow-hidden w-[340px] flex flex-col shadow-2xl">
         {/* Title */}
         <div className="flex items-center justify-between px-5 pt-5 pb-3">
-          <h2 className="text-neutral-900 text-[16px] font-semibold">Adjust photo</h2>
-          <button onClick={onCancel} className="w-8 h-8 rounded-full bg-neutral-100 flex items-center justify-center">
-            <X size={14} strokeWidth={2} className="text-neutral-500" />
+          <h2 className="text-neutral-900 dark:text-white text-[16px] font-semibold">Adjust photo</h2>
+          <button onClick={onCancel} className="w-8 h-8 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
+            <X size={14} strokeWidth={2} className="text-neutral-500 dark:text-neutral-400" />
           </button>
         </div>
 
-        <p className="text-neutral-400 text-[12px] text-center pb-3">
+        <p className="text-neutral-400 dark:text-neutral-500 text-[12px] text-center pb-3">
           Drag to reposition · Pinch or scroll to zoom
         </p>
 
@@ -223,7 +223,7 @@ export default function AvatarCropModal({ file, onConfirm, onCancel }: Props) {
         <div className="flex gap-2 px-5 pb-5">
           <button
             onClick={onCancel}
-            className="flex-1 rounded-full py-3 bg-neutral-100 text-neutral-700 font-semibold text-[14px]"
+            className="flex-1 rounded-full py-3 bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-200 font-semibold text-[14px]"
           >
             Cancel
           </button>

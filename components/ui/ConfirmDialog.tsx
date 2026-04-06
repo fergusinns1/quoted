@@ -28,26 +28,26 @@ export default function ConfirmDialog({
 
       {/* Sheet */}
       <div className="relative w-full px-4 pb-6">
-        <div className="bg-white rounded-3xl overflow-hidden shadow-2xl">
+        <div className="bg-white dark:bg-neutral-900 rounded-3xl overflow-hidden shadow-2xl">
           <div className="px-6 pt-6 pb-5 text-center">
-            <p className="text-neutral-900 font-bold text-[16px] mb-1.5">
+            <p className="text-neutral-900 dark:text-white font-bold text-[16px] mb-1.5">
               {title}
             </p>
-            <p className="text-neutral-400 text-[13px] leading-relaxed">
+            <p className="text-neutral-400 dark:text-neutral-500 text-[13px] leading-relaxed">
               {message}
             </p>
           </div>
 
-          <div className="border-t border-neutral-100 flex">
+          <div className="border-t border-neutral-100 dark:border-neutral-800 flex">
             <button
               onClick={onCancel}
-              className="flex-1 py-4 text-neutral-600 font-medium text-[14px] border-r border-neutral-100 active:bg-neutral-50"
+              className="flex-1 py-4 text-neutral-600 dark:text-neutral-300 font-medium text-[14px] border-r border-neutral-100 dark:border-neutral-800 active:bg-neutral-50 dark:active:bg-neutral-800"
             >
               Cancel
             </button>
             <button
               onClick={onConfirm}
-              className={`flex-1 py-4 font-semibold text-[14px] active:bg-neutral-50 ${
+              className={`flex-1 py-4 font-semibold text-[14px] active:bg-neutral-50 dark:active:bg-neutral-800 ${
                 destructive ? "text-red-500" : "text-blue-500"
               }`}
             >

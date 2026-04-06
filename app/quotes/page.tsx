@@ -68,15 +68,15 @@ export default function QuotesPage() {
     setSortOrder((s) => (s === "newest" ? "oldest" : "newest"));
 
   return (
-    <div className="absolute inset-0 bg-white flex flex-col">
+    <div className="absolute inset-0 bg-white dark:bg-neutral-950 flex flex-col">
       {/* Header */}
       <div className="flex items-start justify-between px-5 pt-14 pb-3 shrink-0">
         <div>
-          <h1 className="text-neutral-900 text-[32px] font-bold tracking-tight leading-tight">
+          <h1 className="text-neutral-900 dark:text-white text-[32px] font-bold tracking-tight leading-tight">
             My Quotes
           </h1>
           {!loading && (
-            <p className="text-neutral-400 text-[14px] mt-0.5">
+            <p className="text-neutral-400 dark:text-neutral-500 text-[14px] mt-0.5">
               {quotes.length} {quotes.length === 1 ? "Quote" : "Quotes"}
             </p>
           )}
@@ -102,7 +102,7 @@ export default function QuotesPage() {
           {/* Sort toggle */}
           <button
             onClick={toggleSort}
-            className="shrink-0 rounded-full px-4 py-2 text-[13px] border border-neutral-200 bg-white text-neutral-800 font-normal whitespace-nowrap"
+            className="shrink-0 rounded-full px-4 py-2 text-[13px] border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-800 dark:text-neutral-200 font-normal whitespace-nowrap"
           >
             Sort: <span className="font-bold">{sortOrder === "newest" ? "Newest" : "Oldest"}</span>
           </button>
@@ -110,11 +110,7 @@ export default function QuotesPage() {
           {/* Person label pill — tapping cycles through or resets */}
           <button
             onClick={() => setSelectedPerson("All")}
-            className={`shrink-0 rounded-full px-4 py-2 text-[13px] border whitespace-nowrap font-medium
-              ${selectedPerson === "All"
-                ? "bg-white border-neutral-200 text-neutral-500"
-                : "bg-white border-neutral-200 text-neutral-500"
-              }`}
+            className="shrink-0 rounded-full px-4 py-2 text-[13px] border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-500 dark:text-neutral-400 whitespace-nowrap font-medium"
           >
             Person
           </button>
@@ -124,8 +120,8 @@ export default function QuotesPage() {
             onClick={() => setSelectedPerson("All")}
             className={`shrink-0 rounded-full px-4 py-2 text-[13px] font-semibold whitespace-nowrap
               ${selectedPerson === "All"
-                ? "bg-neutral-900 text-white"
-                : "bg-white border border-neutral-200 text-neutral-600"
+                ? "bg-neutral-900 dark:bg-white text-white dark:text-neutral-900"
+                : "bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400"
               }`}
           >
             All
@@ -138,8 +134,8 @@ export default function QuotesPage() {
               onClick={() => setSelectedPerson(person)}
               className={`shrink-0 rounded-full px-4 py-2 text-[13px] font-semibold whitespace-nowrap
                 ${selectedPerson === person
-                  ? "bg-neutral-900 text-white"
-                  : "bg-white border border-neutral-200 text-neutral-600"
+                  ? "bg-neutral-900 dark:bg-white text-white dark:text-neutral-900"
+                  : "bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400"
                 }`}
             >
               {person}
@@ -156,8 +152,8 @@ export default function QuotesPage() {
           </div>
         ) : fetchError ? (
           <div className="flex flex-col items-center justify-center py-24 px-10 text-center gap-4">
-            <p className="text-neutral-700 font-semibold">Couldn&apos;t load quotes</p>
-            <p className="text-neutral-400 text-sm">Check your connection and try again.</p>
+            <p className="text-neutral-700 dark:text-neutral-200 font-semibold">Couldn&apos;t load quotes</p>
+            <p className="text-neutral-400 dark:text-neutral-500 text-sm">Check your connection and try again.</p>
             <button
               onClick={loadQuotes}
               className="rounded-full px-6 py-3 bg-neutral-900 text-white font-semibold text-sm active:scale-[0.97] transition-transform"
@@ -176,7 +172,7 @@ export default function QuotesPage() {
             {groups.map((group) => (
               <div key={group.label} className="mb-5">
                 {/* Month label */}
-                <p className="text-neutral-400 text-[14px] font-medium px-5 mb-3">
+                <p className="text-neutral-400 dark:text-neutral-500 text-[14px] font-medium px-5 mb-3">
                   {group.label}
                 </p>
                 {/* Cards */}
@@ -199,6 +195,7 @@ export default function QuotesPage() {
             style={{
               background: "linear-gradient(to top, rgba(255,255,255,1) 0%, rgba(255,255,255,0.95) 40%, rgba(255,255,255,0) 100%)",
             }}
+            id="quotes-fade"
           />
         </div>
       )}

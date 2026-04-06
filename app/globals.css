@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 * {
   box-sizing: border-box;
 }
@@ -26,6 +28,14 @@ body {
   overscroll-behavior: none;
   /* Prevent tap highlight on mobile */
   -webkit-tap-highlight-color: transparent;
+}
+
+html.dark body {
+  background: #0a0a0a;
+}
+
+html.dark #quotes-fade {
+  background: linear-gradient(to top, #0a0a0a 0%, rgba(10,10,10,0.95) 40%, rgba(10,10,10,0) 100%) !important;
 }
 
 /* Scrollable inner containers — hide scrollbar, keep momentum */

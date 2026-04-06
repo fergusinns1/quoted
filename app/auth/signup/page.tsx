@@ -31,14 +31,14 @@ export default function SignUpPage() {
 
   if (done) {
     return (
-      <div className="absolute inset-0 bg-white flex flex-col items-center justify-center px-8 text-center gap-4">
-        <div className="w-14 h-14 rounded-full bg-neutral-100 flex items-center justify-center text-2xl">
+      <div className="absolute inset-0 bg-white dark:bg-neutral-950 flex flex-col items-center justify-center px-8 text-center gap-4">
+        <div className="w-14 h-14 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center text-2xl">
           ✉️
         </div>
         <div>
-          <h2 className="text-neutral-900 text-[22px] font-bold mb-1">Check your email</h2>
-          <p className="text-neutral-400 text-[14px] leading-relaxed">
-            We sent a confirmation link to <span className="text-neutral-700 font-medium">{email}</span>.
+          <h2 className="text-neutral-900 dark:text-white text-[22px] font-bold mb-1">Check your email</h2>
+          <p className="text-neutral-400 dark:text-neutral-500 text-[14px] leading-relaxed">
+            We sent a confirmation link to <span className="text-neutral-700 dark:text-neutral-300 font-medium">{email}</span>.
             Click it to activate your account, then sign in.
           </p>
         </div>
@@ -53,13 +53,13 @@ export default function SignUpPage() {
   }
 
   return (
-    <div className="absolute inset-0 bg-white flex flex-col">
+    <div className="absolute inset-0 bg-white dark:bg-neutral-950 flex flex-col">
       {/* Header */}
       <div className="px-6 pt-16 pb-2 shrink-0">
-        <h1 className="text-neutral-900 text-[32px] font-bold tracking-tight leading-tight">
+        <h1 className="text-neutral-900 dark:text-white text-[32px] font-bold tracking-tight leading-tight">
           Create account.
         </h1>
-        <p className="text-neutral-400 text-[15px] mt-1">Start capturing quotes.</p>
+        <p className="text-neutral-400 dark:text-neutral-500 text-[15px] mt-1">Start capturing quotes.</p>
       </div>
 
       <div className="flex-1" />
@@ -78,7 +78,7 @@ export default function SignUpPage() {
           placeholder="Email"
           required
           autoComplete="email"
-          className="w-full rounded-2xl bg-neutral-100 border-0 text-neutral-800 text-[16px] placeholder-neutral-400 px-4 py-4 focus:outline-none focus:ring-2 focus:ring-neutral-200"
+          className="w-full rounded-2xl bg-neutral-100 dark:bg-neutral-900 border-0 text-neutral-800 dark:text-neutral-100 text-[16px] placeholder-neutral-400 dark:placeholder-neutral-600 px-4 py-4 focus:outline-none focus:ring-2 focus:ring-neutral-200 dark:focus:ring-neutral-700"
         />
 
         <input
@@ -89,7 +89,7 @@ export default function SignUpPage() {
           required
           minLength={6}
           autoComplete="new-password"
-          className="w-full rounded-2xl bg-neutral-100 border-0 text-neutral-800 text-[16px] placeholder-neutral-400 px-4 py-4 focus:outline-none focus:ring-2 focus:ring-neutral-200"
+          className="w-full rounded-2xl bg-neutral-100 dark:bg-neutral-900 border-0 text-neutral-800 dark:text-neutral-100 text-[16px] placeholder-neutral-400 dark:placeholder-neutral-600 px-4 py-4 focus:outline-none focus:ring-2 focus:ring-neutral-200 dark:focus:ring-neutral-700"
         />
 
         <button
@@ -100,9 +100,9 @@ export default function SignUpPage() {
           {loading ? "Creating account…" : "Create account"}
         </button>
 
-        <p className="text-center text-neutral-400 text-[13px] pt-1">
+        <p className="text-center text-neutral-400 dark:text-neutral-500 text-[13px] pt-1">
           Already have an account?{" "}
-          <Link href="/auth/signin" className="text-neutral-700 font-semibold">
+          <Link href="/auth/signin" className="text-neutral-700 dark:text-neutral-300 font-semibold">
             Sign in
           </Link>
         </p>
