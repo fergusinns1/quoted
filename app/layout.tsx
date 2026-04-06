@@ -1,6 +1,13 @@
 import type { Metadata, Viewport } from "next";
+import { Figtree } from "next/font/google";
 import "./globals.css";
 import AppShell from "@/components/shell/AppShell";
+
+const figtree = Figtree({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "Quotd",
@@ -30,7 +37,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body style={{ height: "100%", overflow: "hidden" }}>
+      <body className={figtree.className} style={{ height: "100%", overflow: "hidden" }}>
         <AppShell>{children}</AppShell>
       </body>
     </html>

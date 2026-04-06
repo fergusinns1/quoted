@@ -11,26 +11,10 @@ export default function QuoteCard({ quote }: QuoteCardProps) {
 
   return (
     <Link href={`/quotes/${quote.id}`} className="block">
-      <div className="rounded-2xl bg-white dark:bg-neutral-900 px-4 py-4 flex items-center gap-3.5 border border-neutral-100/80 dark:border-neutral-800 active:scale-[0.985] transition-transform">
-        {/* Text — left */}
-        <div className="flex-1 min-w-0">
-          <p className="text-neutral-900 dark:text-white text-[15px] font-semibold leading-snug line-clamp-2 mb-2.5">
-            &ldquo;{quote.text}&rdquo;
-          </p>
-          {/* Speaker + date as individual pills */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 px-3 py-1 text-[12px] font-medium text-neutral-600 dark:text-neutral-300 truncate max-w-[140px]">
-              {quote.speaker}
-            </span>
-            <span className="rounded-full bg-neutral-100 dark:bg-neutral-800 px-3 py-1 text-[12px] text-neutral-500 dark:text-neutral-400 shrink-0">
-              {formatDate(quote.createdAt)}
-            </span>
-          </div>
-        </div>
-
-        {/* Thumbnail or gradient swatch — right */}
+      <div className="rounded-2xl bg-white dark:bg-neutral-800 px-4 py-3.5 flex items-center gap-3.5 active:scale-[0.985] transition-transform">
+        {/* Thumbnail — left */}
         {quote.imageDataUrl ? (
-          <div className="w-[60px] h-[60px] rounded-xl overflow-hidden shrink-0">
+          <div className="w-[56px] h-[56px] rounded-xl overflow-hidden shrink-0">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={quote.imageDataUrl}
@@ -39,8 +23,23 @@ export default function QuoteCard({ quote }: QuoteCardProps) {
             />
           </div>
         ) : (
-          <div className={`w-[60px] h-[60px] rounded-xl bg-gradient-to-br ${gradient} shrink-0`} />
+          <div className={`w-[56px] h-[56px] rounded-xl bg-gradient-to-br ${gradient} shrink-0`} />
         )}
+
+        {/* Text — right */}
+        <div className="flex-1 min-w-0">
+          <p className="text-neutral-900 dark:text-white text-[15px] font-medium leading-snug line-clamp-2 mb-2">
+            &ldquo;{quote.text}&rdquo;
+          </p>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="rounded-full bg-neutral-100 dark:bg-neutral-700 px-3 py-0.5 text-[12px] text-neutral-600 dark:text-neutral-300 truncate max-w-[140px]">
+              {quote.speaker}
+            </span>
+            <span className="rounded-full bg-neutral-100 dark:bg-neutral-700 px-3 py-0.5 text-[12px] text-neutral-500 dark:text-neutral-400 shrink-0">
+              {formatDate(quote.createdAt)}
+            </span>
+          </div>
+        </div>
       </div>
     </Link>
   );

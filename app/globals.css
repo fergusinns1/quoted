@@ -21,9 +21,7 @@ body {
   padding: 0;
   height: 100%;
   overflow: hidden;
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
-    "Helvetica Neue", Roboto, sans-serif;
-  background: #ffffff;
+background: #ffffff;
   /* Prevent rubber-band scroll bleeding on iOS */
   overscroll-behavior: none;
   /* Prevent tap highlight on mobile */
