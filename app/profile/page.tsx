@@ -44,6 +44,7 @@ export default function ProfilePage() {
   const [emailSaving, setEmailSaving] = useState(false);
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
 
   // ── Initialise from current user ────────────────────────────────────────────
   useEffect(() => {
@@ -149,9 +150,28 @@ export default function ProfilePage() {
 
   // ── Delete account ───────────────────────────────────────────────────────────
   const handleDeleteAccount = async () => {
-    await signOut();
-    showToast("Account deletion requested. Contact support to complete.", "info");
-    router.replace("/auth/signin");
+    setShowDeleteConfirm(false);
+    setDeletingAccount(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("No active session");
+
+      const res = await fetch("/api/delete-account", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error ?? "Deletion failed");
+      }
+
+      await signOut();
+      router.replace("/auth/signin");
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Deletion failed", "error");
+      setDeletingAccount(false);
+    }
   };
 
   const currentName = user?.user_metadata?.full_name || "";
@@ -334,6 +354,13 @@ export default function ProfilePage() {
           onConfirm={handleDeleteAccount}
           onCancel={() => setShowDeleteConfirm(false)}
         />
+      )}
+
+      {deletingAccount && (
+        <div className="fixed inset-0 z-[80] bg-white/80 dark:bg-neutral-950/80 backdrop-blur-sm flex flex-col items-center justify-center gap-3">
+          <div className="w-6 h-6 rounded-full border-2 border-neutral-200 dark:border-neutral-700 border-t-neutral-600 dark:border-t-neutral-300 animate-spin" />
+          <p className="text-neutral-500 dark:text-neutral-400 text-[13px]">Deleting account…</p>
+        </div>
       )}
     </div>
   );
