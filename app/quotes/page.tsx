@@ -66,7 +66,6 @@ export default function QuotesPage() {
 
   const handleFilterPress = () => {
     if (isFiltered) {
-      // State 3 → State 2: re-open to change selection
       setFilterOpen(true);
     } else {
       setFilterOpen((o) => !o);
@@ -84,7 +83,7 @@ export default function QuotesPage() {
   };
 
   return (
-    <div className="absolute inset-0 bg-white dark:bg-neutral-950 flex flex-col">
+    <div className="absolute inset-0 bg-neutral-50 dark:bg-neutral-950 flex flex-col">
 
       {/* ── Header ── */}
       <div className="flex items-start justify-between px-5 pt-14 pb-1 shrink-0">
@@ -115,49 +114,43 @@ export default function QuotesPage() {
 
       {/* ── Filter row ── */}
       {!loading && quotes.length > 0 && (
-        <div className="flex items-center gap-2 px-5 pt-3 pb-4 shrink-0 overflow-x-auto shell-scroll">
-
-          {/* Filter pill — always visible */}
+        <div className="flex items-center gap-2 px-5 pt-4 pb-4 shrink-0 overflow-x-auto shell-scroll">
           <button
             onClick={handleFilterPress}
-            className={`shrink-0 rounded-full px-4 py-1.5 text-[13px] border whitespace-nowrap transition-colors duration-150
-              ${filterOpen
-                ? "bg-neutral-900 dark:bg-white border-neutral-900 dark:border-white text-white dark:text-neutral-900"
-                : "bg-white dark:bg-neutral-950 border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300"
-              }`}
+            className="shrink-0 rounded-full px-4 py-1.5 text-[13px] border border-neutral-300 dark:border-neutral-600 bg-neutral-50 dark:bg-neutral-950 text-neutral-700 dark:text-neutral-300 whitespace-nowrap"
           >
             Filter
           </button>
 
-          {/* State 2: person pills (filter open, none selected) */}
           {filterOpen && people.map((person) => (
             <button
               key={person}
               onClick={() => handleSelectPerson(person)}
-              className="shrink-0 rounded-full px-4 py-1.5 text-[13px] border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 text-neutral-700 dark:text-neutral-300 whitespace-nowrap transition-colors duration-150"
+              className="shrink-0 rounded-full px-4 py-1.5 text-[13px] border border-neutral-300 dark:border-neutral-600 bg-neutral-50 dark:bg-neutral-950 text-neutral-700 dark:text-neutral-300 whitespace-nowrap"
             >
               {person}
             </button>
           ))}
 
-          {/* State 3: active filter pill with clear × */}
           {!filterOpen && isFiltered && (
             <button
               onClick={handleClearFilter}
-              className="shrink-0 flex items-center gap-1.5 rounded-full px-4 py-1.5 text-[13px] border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 text-neutral-700 dark:text-neutral-300 whitespace-nowrap"
+              className="shrink-0 flex items-center gap-2 rounded-full pl-4 pr-3 py-1.5 text-[13px] bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 whitespace-nowrap"
             >
               {selectedPerson}
-              <X size={12} strokeWidth={2.5} className="text-neutral-400" />
+              <span className="w-4 h-4 rounded-full bg-white/20 dark:bg-black/15 flex items-center justify-center shrink-0">
+                <X size={9} strokeWidth={2.5} className="text-white dark:text-neutral-900" />
+              </span>
             </button>
           )}
         </div>
       )}
 
       {/* ── Scrollable content ── */}
-      <div className="flex-1 overflow-y-auto shell-scroll min-h-0 pb-32">
+      <div className="flex-1 overflow-y-auto shell-scroll min-h-0 pb-36">
         {loading ? (
           <div className="flex items-center justify-center py-24">
-            <div className="w-6 h-6 rounded-full border-2 border-neutral-200 border-t-neutral-600 animate-spin" />
+            <div className="w-6 h-6 rounded-full border-2 border-neutral-200 border-t-neutral-500 animate-spin" />
           </div>
         ) : fetchError ? (
           <div className="flex flex-col items-center justify-center py-24 px-10 text-center gap-4">
@@ -177,14 +170,13 @@ export default function QuotesPage() {
             <p className="text-neutral-400 text-sm">No quotes match this filter.</p>
           </div>
         ) : (
-          /* ── Grouped quote container ── */
-          <div className="mx-4 bg-neutral-50 dark:bg-neutral-900 rounded-3xl overflow-hidden">
+          <div className="flex flex-col">
             {groups.map((group, groupIdx) => (
-              <div key={group.label}>
-                <p className={`text-neutral-400 dark:text-neutral-500 text-[13px] px-4 pb-2 ${groupIdx === 0 ? "pt-4" : "pt-5"}`}>
+              <div key={group.label} className={groupIdx > 0 ? "mt-6" : ""}>
+                <p className="text-neutral-400 dark:text-neutral-500 text-[15px] px-5 pb-3">
                   {group.label}
                 </p>
-                <div className="flex flex-col gap-[1.5px] px-2 pb-2">
+                <div className="flex flex-col gap-3 px-4">
                   {group.quotes.map((q) => (
                     <QuoteCard key={q.id} quote={q} />
                   ))}
@@ -197,25 +189,25 @@ export default function QuotesPage() {
 
       {/* ── Bottom fade ── */}
       {quotes.length > 0 && (
-        <div className="absolute bottom-0 left-0 right-0 h-32 pointer-events-none">
+        <div className="absolute bottom-0 left-0 right-0 h-36 pointer-events-none">
           <div
             className="absolute inset-0"
             id="quotes-fade"
             style={{
-              background: "linear-gradient(to top, rgba(255,255,255,1) 0%, rgba(255,255,255,0.95) 40%, rgba(255,255,255,0) 100%)",
+              background: "linear-gradient(to top, rgba(250,250,250,1) 0%, rgba(250,250,250,0.95) 40%, rgba(250,250,250,0) 100%)",
             }}
           />
         </div>
       )}
 
       {/* ── FAB ── */}
-      <div className="absolute bottom-0 left-0 right-0 pb-8 flex justify-center pointer-events-none">
+      <div className="absolute bottom-0 left-0 right-0 pb-9 flex justify-center pointer-events-none">
         <button
           onClick={openCapture}
           aria-label="Add new quote"
-          className="w-16 h-16 rounded-full bg-neutral-900 flex items-center justify-center shadow-xl active:scale-95 transition-transform pointer-events-auto"
+          className="w-20 h-20 rounded-full bg-neutral-900 dark:bg-white flex items-center justify-center shadow-xl active:scale-95 transition-transform pointer-events-auto"
         >
-          <Plus size={26} className="text-white" strokeWidth={2.2} />
+          <Plus size={30} className="text-white dark:text-neutral-900" strokeWidth={1.75} />
         </button>
       </div>
     </div>
