@@ -1,13 +1,59 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { X, Camera, Upload, RefreshCw } from "lucide-react";
+import { X, Camera, Image as ImageIcon, RefreshCw } from "lucide-react";
 import { useCamera } from "@/hooks/useCamera";
 
 interface Props {
   onCapture: (dataUrl: string) => void;
   onClose: () => void;
 }
+
+// ─── Primitives ───────────────────────────────────────────────────────────────
+
+function FrostedIconButton({
+  onClick,
+  label,
+  children,
+}: {
+  onClick: () => void;
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      aria-label={label}
+      className="w-10 h-10 rounded-full flex items-center justify-center active:scale-90 transition-transform"
+      style={{
+        background: "rgba(255,255,255,0.13)",
+        backdropFilter: "blur(20px)",
+        WebkitBackdropFilter: "blur(20px)",
+        border: "1px solid rgba(255,255,255,0.22)",
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+function ShutterButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      aria-label="Take photo"
+      className="w-[72px] h-[72px] rounded-full flex items-center justify-center active:scale-95 transition-transform"
+      style={{
+        border: "3px solid rgba(255,255,255,0.7)",
+        padding: 4,
+      }}
+    >
+      <div className="w-full h-full rounded-full bg-white shadow-sm" />
+    </button>
+  );
+}
+
+// ─── Main component ───────────────────────────────────────────────────────────
 
 export default function CameraStep({ onCapture, onClose }: Props) {
   const { status, videoRef, streamRef, start, stop, capture } = useCamera();
@@ -41,39 +87,24 @@ export default function CameraStep({ onCapture, onClose }: Props) {
     const reader = new FileReader();
     reader.onload = (ev) => {
       const dataUrl = ev.target?.result as string;
-      if (dataUrl) {
-        stop();
-        onCapture(dataUrl);
-      }
+      if (dataUrl) { stop(); onCapture(dataUrl); }
     };
-    reader.onerror = () => {};
     reader.readAsDataURL(file);
     e.target.value = "";
   };
 
   const isActive = status === "active";
   const isRequesting = status === "idle" || status === "requesting";
-  const isFallback =
-    status === "denied" || status === "unavailable" || status === "error";
+  const isFallback = status === "denied" || status === "unavailable" || status === "error";
 
   return (
-    <div className="absolute inset-0 bg-[#e8e6e1] flex flex-col">
-      {/* Top bar */}
-      <div className="flex items-center justify-between px-5 pt-12 pb-3 shrink-0">
-        <button
-          onClick={onClose}
-          aria-label="Close camera"
-          className="w-9 h-9 rounded-full bg-black/8 flex items-center justify-center"
-        >
-          <X size={16} strokeWidth={2} className="text-neutral-700" />
-        </button>
-      </div>
-
-      {/* Camera viewfinder container */}
+    <div className="absolute inset-0 bg-white">
+      {/* Camera viewport — 6 px white inset acts as the border frame */}
       <div
-        className="mx-5 flex-1 overflow-hidden bg-neutral-200/60 relative"
-        style={{ borderRadius: 36 }}
+        className="absolute inset-[6px] overflow-hidden bg-neutral-200"
+        style={{ borderRadius: 38 }}
       >
+        {/* Live video */}
         {isActive && (
           <video
             ref={(el) => {
@@ -87,21 +118,21 @@ export default function CameraStep({ onCapture, onClose }: Props) {
           />
         )}
 
+        {/* Requesting state */}
         {isRequesting && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
-            <div className="w-16 h-16 rounded-full bg-neutral-300/60 flex items-center justify-center">
-              <Camera size={26} className="text-neutral-500" strokeWidth={1.4} />
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-neutral-100">
+            <div className="w-16 h-16 rounded-full bg-neutral-200 flex items-center justify-center">
+              <Camera size={26} className="text-neutral-400" strokeWidth={1.4} />
             </div>
-            <p className="text-neutral-500 text-sm text-center">
-              Requesting camera access…
-            </p>
+            <p className="text-neutral-500 text-sm">Requesting camera…</p>
           </div>
         )}
 
+        {/* Fallback / denied state */}
         {isFallback && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-5 px-8">
-            <div className="w-16 h-16 rounded-full bg-neutral-300/60 flex items-center justify-center">
-              <Camera size={26} className="text-neutral-500" strokeWidth={1.4} />
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-5 px-8 bg-neutral-100">
+            <div className="w-16 h-16 rounded-full bg-neutral-200 flex items-center justify-center">
+              <Camera size={26} className="text-neutral-400" strokeWidth={1.4} />
             </div>
             <div className="text-center">
               <p className="text-neutral-700 text-[16px] font-semibold mb-1.5">
@@ -118,7 +149,7 @@ export default function CameraStep({ onCapture, onClose }: Props) {
                 onClick={() => fileInputRef.current?.click()}
                 className="flex items-center gap-2 rounded-full px-7 py-3.5 bg-neutral-900 text-white font-semibold text-sm w-full justify-center active:scale-[0.97] transition-transform"
               >
-                <Upload size={15} />
+                <ImageIcon size={15} />
                 Upload photo
               </button>
               {status === "denied" && (
@@ -133,27 +164,44 @@ export default function CameraStep({ onCapture, onClose }: Props) {
             </div>
           </div>
         )}
-      </div>
 
-      {/* Controls below container */}
-      <div className="shrink-0 py-7 flex flex-col items-center gap-3">
+        {/* Bottom fog gradient — only over live camera */}
         {isActive && (
-          <>
-            <button
-              onClick={handleShutter}
-              aria-label="Take photo"
-              className="w-[68px] h-[68px] rounded-full bg-neutral-900 flex items-center justify-center shadow-lg active:scale-95 transition-transform"
-            >
-              <div className="w-[52px] h-[52px] rounded-full border-[2.5px] border-white/50" />
-            </button>
-            <button
+          <div
+            className="absolute bottom-0 inset-x-0 h-[38%] pointer-events-none"
+            style={{
+              background: "linear-gradient(to top, rgba(0,0,0,0.44) 0%, rgba(0,0,0,0) 100%)",
+            }}
+          />
+        )}
+
+        {/* Floating controls */}
+        {isActive && (
+          <div className="absolute bottom-9 inset-x-0 flex items-center justify-between px-8">
+            <FrostedIconButton onClick={onClose} label="Close camera">
+              <X size={17} strokeWidth={2} className="text-white" />
+            </FrostedIconButton>
+
+            <ShutterButton onClick={handleShutter} />
+
+            <FrostedIconButton
               onClick={() => fileInputRef.current?.click()}
-              className="flex items-center gap-1.5 text-neutral-400 text-[12px]"
+              label="Upload from gallery"
             >
-              <Upload size={11} />
-              Upload instead
-            </button>
-          </>
+              <ImageIcon size={16} strokeWidth={1.8} className="text-white" />
+            </FrostedIconButton>
+          </div>
+        )}
+
+        {/* Non-active close button (requesting / fallback) */}
+        {!isActive && (
+          <button
+            onClick={onClose}
+            aria-label="Close"
+            className="absolute top-5 left-5 w-9 h-9 rounded-full bg-white/80 flex items-center justify-center"
+          >
+            <X size={16} strokeWidth={2} className="text-neutral-600" />
+          </button>
         )}
       </div>
 

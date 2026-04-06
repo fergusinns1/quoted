@@ -98,7 +98,6 @@ export default function CaptureFlow() {
           imageDataUrl={imageDataUrl}
           onConfirm={handleConfirm}
           onRetake={handleRetake}
-          onClose={handleClose}
         />
       )}
       {step === "quote" && (
