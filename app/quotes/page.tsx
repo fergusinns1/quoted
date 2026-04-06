@@ -19,7 +19,7 @@ import QuoteDetailSheet from "@/components/ui/QuoteDetailSheet";
 
 export default function QuotesPage() {
   const { openCapture } = useCaptureFlow();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, avatarUrl } = useAuth();
   const router = useRouter();
 
   const [quotes, setQuotes] = useState<QuoteRecord[]>([]);
@@ -107,7 +107,7 @@ export default function QuotesPage() {
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="/HomeImage.png"
+            src={avatarUrl ?? "/HomeImage.png"}
             alt="Profile"
             className="w-full h-full object-cover object-top"
           />

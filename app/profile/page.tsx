@@ -7,7 +7,6 @@ import {
   Camera,
   User,
   Mail,
-  Moon,
   LogOut,
   Trash2,
   ChevronRight,
@@ -15,7 +14,6 @@ import {
   X,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import { useTheme } from "@/context/ThemeContext";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/context/ToastContext";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
@@ -26,7 +24,6 @@ const AVATAR_BUCKET = "avatars";
 export default function ProfilePage() {
   const router = useRouter();
   const { user, signOut } = useAuth();
-  const { theme, setTheme } = useTheme();
   const showToast = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -279,32 +276,6 @@ export default function ProfilePage() {
               last
             />
           )}
-        </Section>
-
-        {/* Appearance — placeholder toggle */}
-        <Section label="Appearance">
-          <div className="flex items-center justify-between px-4 py-3.5">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center shrink-0">
-                <Moon size={16} className="text-neutral-500 dark:text-neutral-400" />
-              </div>
-              <span className="text-neutral-800 dark:text-neutral-100 text-[15px]">Dark mode</span>
-            </div>
-            <button
-              role="switch"
-              aria-checked={theme === "dark"}
-              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${
-                theme === "dark" ? "bg-neutral-900" : "bg-neutral-200"
-              }`}
-            >
-              <span
-                className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform duration-200 ${
-                  theme === "dark" ? "translate-x-5" : "translate-x-0.5"
-                }`}
-              />
-            </button>
-          </div>
         </Section>
 
         {/* Account actions */}
