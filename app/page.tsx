@@ -43,17 +43,17 @@ export default function HomePage() {
         <button
           onClick={openCapture}
           aria-label="Add new quote"
-          className="w-20 h-20 rounded-full bg-neutral-900 flex items-center justify-center shadow-lg active:scale-95 transition-transform mt-2"
+          className="w-28 h-28 rounded-full bg-neutral-900 flex items-center justify-center active:scale-95 transition-transform mt-2"
         >
-          <Plus size={32} className="text-white" strokeWidth={1.75} />
+          <Plus size={44} className="text-white" strokeWidth={1.25} />
         </button>
       </div>
 
       {/* Bottom section */}
-      <div className="w-full pb-12 flex flex-col items-center gap-4">
+      <div className="pb-12 flex flex-col items-center gap-4">
         <Link
           href="/quotes"
-          className="w-full bg-white rounded-2xl px-5 py-4 flex items-center gap-4 active:opacity-80 transition-opacity shadow-sm"
+          className="bg-white rounded-2xl px-5 py-4 flex items-center gap-4 active:opacity-80 transition-opacity"
         >
           <div className="w-10 h-10 rounded-full overflow-hidden bg-neutral-200 shrink-0">
             {avatarUrl ? (
