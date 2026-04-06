@@ -16,7 +16,7 @@ export default function ConfirmStep({ imageDataUrl, onConfirm, onRetake }: Props
           borderRadius: 38,
           // Matches camera frame feel; height is ~70 % of viewport
           height: "calc(70dvh - 6px)",
-          animation: "confirmSettle 0.38s cubic-bezier(0.34, 1.46, 0.64, 1) both",
+          animation: "confirmSettle 0.72s cubic-bezier(0.22, 1, 0.36, 1) both",
         }}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -31,7 +31,7 @@ export default function ConfirmStep({ imageDataUrl, onConfirm, onRetake }: Props
       <div
         className="flex-1 flex flex-col justify-center px-5 gap-3"
         style={{
-          animation: "fadeUp 0.22s ease-out 0.26s both",
+          animation: "fadeUp 0.3s ease-out 0.48s both",
         }}
       >
         <button
