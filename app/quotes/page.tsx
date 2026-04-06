@@ -15,6 +15,7 @@ import {
   groupByMonth,
 } from "@/lib/utils";
 import QuoteCard from "@/components/ui/QuoteCard";
+import QuoteDetailSheet from "@/components/ui/QuoteDetailSheet";
 
 export default function QuotesPage() {
   const { openCapture } = useCaptureFlow();
@@ -26,6 +27,7 @@ export default function QuotesPage() {
   const [fetchError, setFetchError] = useState(false);
   const [selectedPerson, setSelectedPerson] = useState("All");
   const [filterOpen, setFilterOpen] = useState(false);
+  const [selectedQuote, setSelectedQuote] = useState<QuoteRecord | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user) router.replace("/auth/signin");
@@ -178,7 +180,7 @@ export default function QuotesPage() {
                 </p>
                 <div className="flex flex-col gap-3 px-4">
                   {group.quotes.map((q) => (
-                    <QuoteCard key={q.id} quote={q} />
+                    <QuoteCard key={q.id} quote={q} onClick={() => setSelectedQuote(q)} />
                   ))}
                 </div>
               </div>
@@ -198,6 +200,18 @@ export default function QuotesPage() {
             }}
           />
         </div>
+      )}
+
+      {/* ── Quote detail sheet ── */}
+      {selectedQuote && (
+        <QuoteDetailSheet
+          quote={selectedQuote}
+          onClose={() => setSelectedQuote(null)}
+          onQuoteUpdated={(updated) => {
+            setSelectedQuote(updated);
+            setQuotes((prev) => prev.map((q) => q.id === updated.id ? updated : q));
+          }}
+        />
       )}
 
       {/* ── FAB ── */}

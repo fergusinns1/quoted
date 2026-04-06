@@ -1,16 +1,16 @@
-import Link from "next/link";
 import { QuoteRecord } from "@/lib/types";
 import { gradientForId, formatDate } from "@/lib/utils";
 
 interface QuoteCardProps {
   quote: QuoteRecord;
+  onClick: () => void;
 }
 
-export default function QuoteCard({ quote }: QuoteCardProps) {
+export default function QuoteCard({ quote, onClick }: QuoteCardProps) {
   const gradient = gradientForId(quote.id);
 
   return (
-    <Link href={`/quotes/${quote.id}`} className="block">
+    <button onClick={onClick} className="block w-full text-left">
       <div className="rounded-3xl bg-white dark:bg-neutral-900 px-4 py-4 flex items-center gap-4 active:scale-[0.985] transition-transform">
         {/* Thumbnail — left */}
         {quote.imageDataUrl ? (
@@ -41,6 +41,6 @@ export default function QuoteCard({ quote }: QuoteCardProps) {
           </div>
         </div>
       </div>
-    </Link>
+    </button>
   );
 }
