@@ -8,15 +8,14 @@ interface Props {
 
 export default function ConfirmStep({ imageDataUrl, onConfirm, onRetake }: Props) {
   return (
-    <div className="absolute inset-0 bg-white flex flex-col px-[6px]" style={{ gap: "var(--gap)", paddingTop: "var(--gap)", paddingBottom: "var(--gap)" }}>
-      <style>{`:root { --gap: clamp(10px, 3dvh, 24px); }`}</style>
-      {/* Image — fills remaining space after buttons + gaps */}
+    <div className="absolute inset-0 bg-white flex flex-col">
+      {/* Image — top section, same 6px inset border as camera state */}
       <div
-        className="overflow-hidden"
+        className="mx-[6px] mt-[6px] overflow-hidden shrink-0"
         style={{
           borderRadius: 38,
-          flex: 1,
-          animation: "confirmSettle 0.72s cubic-bezier(0.22, 1, 0.36, 1) both",
+          height: "calc(72dvh - 6px)",
+          animation: "confirmSettle 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) both",
         }}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -27,13 +26,10 @@ export default function ConfirmStep({ imageDataUrl, onConfirm, onRetake }: Props
         />
       </div>
 
-      {/* Action buttons — fade in after image settles */}
+      {/* Action buttons */}
       <div
-        className="flex flex-col shrink-0 px-[3px]"
-        style={{
-          gap: "var(--gap)",
-          animation: "fadeUp 0.3s ease-out 0.48s both",
-        }}
+        className="flex-1 flex flex-col justify-center px-5 gap-2.5"
+        style={{ animation: "fadeUp 0.25s ease-out 0.35s both" }}
       >
         <button
           onClick={onConfirm}
