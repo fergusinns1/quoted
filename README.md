@@ -1,36 +1,78 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Quotd
 
-## Getting Started
+A mobile-first quote capture app. Built with Next.js 16 (App Router), TypeScript, and Tailwind CSS v4.
 
-First, run the development server:
+---
+
+## Running the app
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Then open `http://localhost:3000` in your browser. The app renders as a fixed iPhone-sized shell centered on a dark desktop canvas.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Project structure
 
-## Learn More
+```
+app/
+  layout.tsx           Root HTML layout (no shell here — shell lives per-page)
+  page.tsx             / → Home / "Quote it" landing screen
+  globals.css          Global resets + Tailwind import
+  quotes/
+    page.tsx           /quotes → Events list page with filter pills + cards
+  shared/
+    page.tsx           /shared → Placeholder page
 
-To learn more about Next.js, take a look at the following resources:
+components/
+  shell/
+    MobileShell.tsx    The phone frame wrapper — centers a 390×844px shell on desktop
+  nav/
+    BottomNav.tsx      Frosted-glass bottom tab bar (New / Quotes / Shared)
+  ui/
+    PillButton.tsx     Reusable rounded pill button (primary / secondary / ghost)
+    Card.tsx           Reusable card with optional glass variant
+    FloatingButton.tsx Circular icon button with glass treatment
+    PageContainer.tsx  Fills the shell, handles scroll, clears nav padding
+    QuoteCard.tsx      Individual quote card component
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+lib/
+  data.ts              Local placeholder quote data + types
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+---
 
-## Deploy on Vercel
+## Mobile shell
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+`components/shell/MobileShell.tsx` is the core of the desktop-preview layout.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Fixed `390 × 844` px (iPhone 14 logical resolution)
+- `rounded-[44px]` + `overflow-hidden` to clip page content cleanly
+- `shadow-[0_40px_80px_rgba(0,0,0,0.7)]` for depth against the dark canvas
+- A `ring-1 ring-white/10` bezel overlay sits above all content as a subtle frame
+- Every page wraps its content in `<MobileShell>` and uses `absolute inset-0` positioning inside it
+
+---
+
+## Design system
+
+| Component | Purpose |
+|---|---|
+| `PillButton` | `variant="primary"` (white fill), `"secondary"` (glass), `"ghost"` |
+| `Card` | Default white card or `glass` prop for frosted treatment |
+| `FloatingButton` | Icon-only circular button, configurable size |
+| `PageContainer` | `scrollable` prop enables touch-style scroll inside the shell |
+| `QuoteCard` | Composed from raw data, colour strip derived from gradient string |
+
+---
+
+## Next steps
+
+- Camera flow / OCR integration
+- Auth (Clerk or Supabase)
+- Real database for quotes
+- Share flow
+- Quote detail / edit screens
