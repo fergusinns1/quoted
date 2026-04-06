@@ -4,7 +4,15 @@ export default function MobileShell({
   children: React.ReactNode;
 }) {
   return (
-    <div className="relative w-full h-[100dvh] overflow-hidden bg-white">
+    /*
+     * The app frame. Fills the dynamic viewport (accounts for mobile browser
+     * chrome appearing/disappearing). overflow-hidden prevents any child from
+     * causing document scroll — all scrolling happens inside content areas.
+     */
+    <div
+      className="relative w-full overflow-hidden bg-white"
+      style={{ height: "100dvh" }}
+    >
       {children}
     </div>
   );

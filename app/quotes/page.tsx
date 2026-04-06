@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Plus } from "lucide-react";
 import { useCaptureFlow } from "@/context/CaptureContext";
 import { useAuth } from "@/context/AuthContext";
@@ -18,7 +19,7 @@ import QuoteCard from "@/components/ui/QuoteCard";
 
 export default function QuotesPage() {
   const { openCapture } = useCaptureFlow();
-  const { user, loading: authLoading, signOut } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const router = useRouter();
 
   const [quotes, setQuotes] = useState<QuoteRecord[]>([]);
@@ -80,10 +81,10 @@ export default function QuotesPage() {
             </p>
           )}
         </div>
-        {/* Avatar — long press or tap shows sign out */}
-        <button
-          onClick={signOut}
-          aria-label="Sign out"
+        {/* Avatar — navigates to profile settings */}
+        <Link
+          href="/profile"
+          aria-label="Profile settings"
           className="w-10 h-10 rounded-full overflow-hidden bg-neutral-200 shrink-0 mt-1 active:opacity-70 transition-opacity"
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -92,7 +93,7 @@ export default function QuotesPage() {
             alt="Profile"
             className="w-full h-full object-cover object-top"
           />
-        </button>
+        </Link>
       </div>
 
       {/* Filter row */}

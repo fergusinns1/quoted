@@ -4,20 +4,35 @@
   box-sizing: border-box;
 }
 
-html,
-body {
-  height: 100%;
-  margin: 0;
-  padding: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Roboto, sans-serif;
-  background: #ffffff;
-  overscroll-behavior: none;
+/*
+ * Lock the document — no outer scrolling ever.
+ * MobileShell uses 100dvh as the app frame; everything scrolls internally.
+ */
+html {
+  height: -webkit-fill-available; /* Safari fallback */
+  height: 100dvh;
+  overflow: hidden;
 }
 
-/* Hide scrollbars inside shell */
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
+    "Helvetica Neue", Roboto, sans-serif;
+  background: #ffffff;
+  /* Prevent rubber-band scroll bleeding on iOS */
+  overscroll-behavior: none;
+  /* Prevent tap highlight on mobile */
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Scrollable inner containers — hide scrollbar, keep momentum */
 .shell-scroll {
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
+  overscroll-behavior: contain;
 }
 
 .shell-scroll::-webkit-scrollbar {
