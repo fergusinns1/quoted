@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { ArrowLeft } from "lucide-react";
 import { getAllQuotes } from "@/lib/quotesApi";
 import { rankSpeakers } from "@/lib/utils";
+import { useKeyboardHeight } from "@/hooks/useKeyboardHeight";
 
 interface Props {
   imageDataUrl: string | null;
@@ -14,7 +15,7 @@ interface Props {
 
 export default function PersonStep({
   imageDataUrl: _imageDataUrl,
-  quoteText,
+  quoteText: _quoteText,
   onSave,
   onBack,
 }: Props) {
@@ -22,14 +23,13 @@ export default function PersonStep({
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const keyboardHeight = useKeyboardHeight();
 
   useEffect(() => {
     const t = setTimeout(() => inputRef.current?.focus(), 80);
-
     getAllQuotes()
       .then((quotes) => setSuggestions(rankSpeakers(quotes)))
       .catch(() => {});
-
     return () => clearTimeout(t);
   }, []);
 
@@ -44,36 +44,26 @@ export default function PersonStep({
     }
   };
 
+  const hasName = name.trim().length > 0;
+  const btnBottom = keyboardHeight > 0 ? keyboardHeight + 8 : 32;
+
   return (
-    <div className="absolute inset-0 bg-white flex flex-col">
-      {/* Heading row */}
-      <div className="flex items-center gap-4 px-5 pt-14 pb-2 shrink-0">
+    <div className="absolute inset-0 bg-white">
+      {/* Top stack — locked to top, never moves */}
+      <div className="px-5 pt-14">
         <button
           onClick={onBack}
           disabled={saving}
           aria-label="Go back"
-          className="w-9 h-9 rounded-full bg-neutral-100 flex items-center justify-center shrink-0 disabled:opacity-50"
+          className="w-9 h-9 rounded-full bg-neutral-100 flex items-center justify-center mb-5 disabled:opacity-50"
         >
           <ArrowLeft size={16} strokeWidth={2} className="text-neutral-600" />
         </button>
-        <h1 className="text-neutral-900 text-[28px] font-bold tracking-tight leading-tight">
-          Said by
+
+        <h1 className="text-neutral-900 text-[32px] font-bold tracking-tight leading-tight mb-6">
+          Who said it?
         </h1>
-      </div>
 
-      {/* Spacer — lets keyboard push content up on mobile */}
-      <div className="flex-1" />
-
-      {/* Input section — anchored near bottom */}
-      <div className="px-5 pb-10 shrink-0 flex flex-col gap-3">
-        {/* Quote preview */}
-        <div className="rounded-2xl bg-neutral-50 border border-neutral-100 px-4 py-3.5">
-          <p className="text-neutral-700 text-[14px] font-medium leading-snug line-clamp-2">
-            &ldquo;{quoteText}&rdquo;
-          </p>
-        </div>
-
-        {/* Name input */}
         <input
           ref={inputRef}
           type="text"
@@ -83,50 +73,45 @@ export default function PersonStep({
           placeholder="e.g Fergus Inns"
           disabled={saving}
           autoComplete="off"
-          className="
-            w-full rounded-2xl bg-neutral-100 border-0
-            text-neutral-800 text-[16px] placeholder-neutral-400
-            px-4 py-4
-            focus:outline-none
-            disabled:opacity-60
-          "
+          className="w-full rounded-2xl bg-neutral-100 border-0 text-neutral-800 text-[16px] placeholder-neutral-400 px-4 py-4 focus:outline-none disabled:opacity-60"
         />
 
-        {/* Ranked suggestions */}
+        {/* Suggestion pills */}
         {suggestions.length > 0 && (
-          <div className="flex gap-2 overflow-x-auto shell-scroll pb-0.5">
+          <div className="flex gap-2 overflow-x-auto shell-scroll mt-4 pb-0.5">
             {suggestions.map((s) => (
               <button
                 key={s}
                 onClick={() => setName(s)}
-                className={`
-                  shrink-0 rounded-full px-4 py-2 text-[13px] font-medium
-                  transition-colors border
-                  ${
-                    name === s
-                      ? "bg-neutral-900 text-white border-transparent"
-                      : "bg-white text-neutral-600 border-neutral-200 active:bg-neutral-100"
-                  }
-                `}
+                className={`shrink-0 rounded-full px-4 py-2 text-[13px] font-medium transition-colors border ${
+                  name === s
+                    ? "bg-neutral-900 text-white border-transparent"
+                    : "bg-white text-neutral-600 border-neutral-200 active:bg-neutral-100"
+                }`}
               >
                 {s}
               </button>
             ))}
           </div>
         )}
+      </div>
 
-        {/* Continue button */}
+      {/* Save — fades in on first keystroke, hugs top of keyboard */}
+      <div
+        className="fixed left-0 right-0 px-5"
+        style={{
+          bottom: btnBottom,
+          opacity: hasName ? 1 : 0,
+          pointerEvents: hasName ? "auto" : "none",
+          transition: "bottom 0.3s ease-out, opacity 0.2s ease-out",
+        }}
+      >
         <button
-          disabled={!name.trim() || saving}
+          disabled={saving}
           onClick={handleSave}
-          className="
-            w-full rounded-full py-4
-            bg-neutral-900 text-white font-semibold text-[15px]
-            disabled:opacity-30 disabled:cursor-not-allowed
-            active:scale-[0.98] transition-transform
-          "
+          className="w-full rounded-full py-4 bg-neutral-900 text-white font-semibold text-[15px] active:scale-[0.98] transition-transform disabled:opacity-60"
         >
-          {saving ? "Saving…" : "Continue"}
+          {saving ? "Saving…" : "Save"}
         </button>
       </div>
     </div>
