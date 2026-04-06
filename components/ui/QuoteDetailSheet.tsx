@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import { Pencil, Share2, Download, Check } from "lucide-react";
+import { Pencil, Share2, ArrowDownToLine, Check } from "lucide-react";
 import { QuoteRecord } from "@/lib/types";
-import { gradientForId, formatDate, shareQuoteCard, downloadQuoteCard } from "@/lib/utils";
+import { gradientForId, formatDate, shareQuoteCard, saveToPhotos } from "@/lib/utils";
 import { updateQuote } from "@/lib/quotesApi";
 import { useToast } from "@/context/ToastContext";
 import EditSheet from "@/components/ui/EditSheet";
@@ -108,9 +108,11 @@ export default function QuoteDetailSheet({ quote: initialQuote, onClose, onQuote
     }
   };
 
-  const handleDownload = async () => {
-    await downloadQuoteCard(quote);
-    showToast("Saved to downloads");
+  const handleSave = async () => {
+    const result = await saveToPhotos(quote);
+    if (result === "saved") showToast("Image saved to photos");
+    else if (result === "downloaded") showToast("Saved to downloads");
+    else showToast("Could not save image", "error");
   };
 
   const handleEditSave = async (text: string, speaker: string) => {
@@ -151,7 +153,7 @@ export default function QuoteDetailSheet({ quote: initialQuote, onClose, onQuote
         className="fixed inset-x-0 bottom-0 z-[48] overflow-hidden"
         style={{
           height: "88dvh",
-          borderRadius: "28px 28px 0 0",
+          borderRadius: "44px 44px 0 0",
           transform: `translateY(${sheetTranslate})`,
           transition: sheetTransition,
           willChange: "transform",
@@ -185,7 +187,7 @@ export default function QuoteDetailSheet({ quote: initialQuote, onClose, onQuote
         </div>
 
         {/* ── Quote content ── */}
-        <div className="relative z-10 px-6">
+        <div className="relative z-10 px-8 pt-2">
           <p className="text-white text-[24px] font-semibold leading-snug mb-4">
             &ldquo;{quote.text}&rdquo;
           </p>
@@ -216,8 +218,8 @@ export default function QuoteDetailSheet({ quote: initialQuote, onClose, onQuote
               : <Share2 size={18} strokeWidth={1.8} className="text-white" />
             }
           </ActionButton>
-          <ActionButton onClick={handleDownload} aria-label="Download quote card">
-            <Download size={18} strokeWidth={1.8} className="text-white" />
+          <ActionButton onClick={handleSave} aria-label="Save to photos">
+            <ArrowDownToLine size={18} strokeWidth={1.8} className="text-white" />
           </ActionButton>
         </div>
       </div>

@@ -293,7 +293,7 @@ export async function shareQuoteCard(
   }
 }
 
-// ─── Download ─────────────────────────────────────────────────────────────────
+// ─── Download (desktop fallback) ─────────────────────────────────────────────
 
 /**
  * Downloads the rendered quote card as a PNG. Falls back to raw image if
@@ -318,6 +318,76 @@ export async function downloadQuoteCard(quote: QuoteRecord): Promise<void> {
   document.body.removeChild(a);
 
   if (blob) URL.revokeObjectURL(url);
+}
+
+// ─── Save to photos ───────────────────────────────────────────────────────────
+
+/**
+ * Saves the rendered quote card to the device camera roll / photo library.
+ *
+ * On iOS Safari / Android Chrome the Web Share API with a file triggers the
+ * native share sheet — the user taps "Save Image" to add it to their camera
+ * roll. This is the only reliable browser path to the camera roll without a
+ * native app.
+ *
+ * On desktop (or when the Share API is unavailable) it falls back to a
+ * standard file download.
+ *
+ * Returns 'saved' (share sheet opened), 'downloaded' (desktop fallback),
+ * or 'failed'.
+ */
+export async function saveToPhotos(
+  quote: QuoteRecord
+): Promise<"saved" | "downloaded" | "failed"> {
+  const slug = quote.speaker.replace(/\s+/g, "-").toLowerCase();
+  const filename = `quotd-${slug}-${quote.id.slice(0, 6)}.png`;
+
+  const blob = await renderQuoteCard(quote);
+
+  // Use the raw signed image as fallback if canvas render fails
+  let imageBlob: Blob | null = blob;
+  if (!imageBlob && quote.imageDataUrl) {
+    try {
+      const res = await fetch(quote.imageDataUrl);
+      imageBlob = await res.blob();
+    } catch {
+      // ignore
+    }
+  }
+
+  if (!imageBlob) return "failed";
+
+  const file = new File([imageBlob], filename, { type: "image/png" });
+
+  // Mobile path: Web Share API with image file
+  if (
+    typeof navigator !== "undefined" &&
+    "share" in navigator &&
+    navigator.canShare?.({ files: [file] })
+  ) {
+    try {
+      await navigator.share({ files: [file] });
+      return "saved";
+    } catch (err) {
+      // AbortError = user dismissed the share sheet — not a real failure
+      if (err instanceof Error && err.name !== "AbortError") {
+        // fall through to download
+      } else {
+        return "failed";
+      }
+    }
+  }
+
+  // Desktop fallback: trigger a file download
+  const url = URL.createObjectURL(imageBlob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  return "downloaded";
 }
 
 // ─── Recap helpers ────────────────────────────────────────────────────────────
