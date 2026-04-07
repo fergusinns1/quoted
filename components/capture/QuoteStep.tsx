@@ -58,7 +58,7 @@ export default function QuoteStep({ imageDataUrl: _imageDataUrl, onSubmit, onBac
             if ((e.metaKey || e.ctrlKey) && e.key === "Enter") handleSubmit();
           }}
           placeholder="The quote goes here..."
-          rows={5}
+          rows={3}
           className="w-full resize-none rounded-2xl bg-neutral-100 border-0 text-neutral-800 text-[16px] leading-relaxed placeholder-neutral-400 px-4 py-4 focus:outline-none touch-auto"
         />
 
