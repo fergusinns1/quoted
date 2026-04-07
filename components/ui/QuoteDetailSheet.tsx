@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import { Share2, ArrowDownToLine, Check } from "lucide-react";
+import { Pencil, Share2, ArrowDownToLine, Check } from "lucide-react";
 import { QuoteRecord } from "@/lib/types";
 import { gradientForId, formatDate, shareQuoteCard, saveToPhotos } from "@/lib/utils";
+import { updateQuote } from "@/lib/quotesApi";
 import { useToast } from "@/context/ToastContext";
+import EditSheet from "@/components/ui/EditSheet";
 
 interface Props {
   quote: QuoteRecord;
@@ -14,25 +16,23 @@ interface Props {
 
 type ShareFeedback = "idle" | "shared" | "copied";
 
-// ─── Main sheet ───────────────────────────────────────────────────────────────
 export default function QuoteDetailSheet({ quote: initialQuote, onClose, onQuoteUpdated }: Props) {
   const showToast = useToast();
   const sheetRef = useRef<HTMLDivElement>(null);
   const closingRef = useRef(false);
 
   const [quote, setQuote] = useState(initialQuote);
-
   const [entered, setEntered] = useState(false);
+  const [dragY, setDragY] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartY = useRef(0);
+  const [shareFeedback, setShareFeedback] = useState<ShareFeedback>("idle");
+  const [showEdit, setShowEdit] = useState(false);
+
   useEffect(() => {
     const id = requestAnimationFrame(() => setEntered(true));
     return () => cancelAnimationFrame(id);
   }, []);
-
-  const [dragY, setDragY] = useState(0);
-  const [isDragging, setIsDragging] = useState(false);
-  const dragStartY = useRef(0);
-
-  const [shareFeedback, setShareFeedback] = useState<ShareFeedback>("idle");
 
   const dismiss = useCallback(() => {
     if (closingRef.current) return;
@@ -42,7 +42,6 @@ export default function QuoteDetailSheet({ quote: initialQuote, onClose, onQuote
     setTimeout(onClose, 380);
   }, [onClose]);
 
-  // ── Drag handlers ─────────────────────────────────────────────────────────
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     dragStartY.current = e.clientY;
     setIsDragging(true);
@@ -55,14 +54,10 @@ export default function QuoteDetailSheet({ quote: initialQuote, onClose, onQuote
   const handlePointerUp = () => {
     setIsDragging(false);
     const h = sheetRef.current?.offsetHeight ?? 600;
-    if (dragY > h * 0.28) {
-      dismiss();
-    } else {
-      setDragY(0);
-    }
+    if (dragY > h * 0.28) dismiss();
+    else setDragY(0);
   };
 
-  // ── Actions ───────────────────────────────────────────────────────────────
   const handleShare = async () => {
     const result = await shareQuoteCard(quote);
     if (result === "copied") {
@@ -82,22 +77,25 @@ export default function QuoteDetailSheet({ quote: initialQuote, onClose, onQuote
     else showToast("Could not save image", "error");
   };
 
+  const handleEditSave = async (text: string, speaker: string) => {
+    await updateQuote(quote.id, { text, speaker });
+    const updated = { ...quote, text, speaker, updatedAt: Date.now() };
+    setQuote(updated);
+    onQuoteUpdated(updated);
+    setShowEdit(false);
+    window.dispatchEvent(new Event("quotd:changed"));
+    showToast("Changes saved");
+  };
+
   const gradient = gradientForId(quote.id);
   const hasImage = !!quote.imageDataUrl;
-
   const sheetTranslate = entered ? `${dragY}px` : "100%";
-  const sheetTransition = isDragging
-    ? "none"
-    : "transform 0.38s cubic-bezier(0.32, 0.72, 0, 1)";
-
-  // Buttons fade in with the sheet, fade out as it's dragged down
-  const buttonOpacity = entered
-    ? Math.max(0, 1 - dragY / 120)
-    : 0;
+  const sheetTransition = isDragging ? "none" : "transform 0.38s cubic-bezier(0.32, 0.72, 0, 1)";
+  const buttonOpacity = entered ? Math.max(0, 1 - dragY / 120) : 0;
 
   return (
     <>
-      {/* ── Backdrop ── */}
+      {/* Backdrop */}
       <div
         className="fixed inset-0 z-[48] bg-black/40"
         style={{
@@ -108,8 +106,7 @@ export default function QuoteDetailSheet({ quote: initialQuote, onClose, onQuote
         onClick={dismiss}
       />
 
-      {/* ── Sheet ── transform creates a new stacking context; fixed children
-           (EditSheet, action buttons) must live OUTSIDE this div ── */}
+      {/* Sheet — transform creates stacking context; fixed children must live outside */}
       <div
         ref={sheetRef}
         className="fixed inset-x-0 bottom-0 z-[49] overflow-hidden"
@@ -121,23 +118,16 @@ export default function QuoteDetailSheet({ quote: initialQuote, onClose, onQuote
           willChange: "transform",
         }}
       >
-        {/* Background */}
         {hasImage ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={quote.imageDataUrl!}
-            alt=""
-            className="absolute inset-0 w-full h-full object-cover"
-            draggable={false}
-          />
+          <img src={quote.imageDataUrl!} alt="" className="absolute inset-0 w-full h-full object-cover" draggable={false} />
         ) : (
           <div className={`absolute inset-0 bg-gradient-to-br ${gradient}`} />
         )}
 
-        {/* Vignette */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/10 to-black/35" />
 
-        {/* ── Drag handle ── */}
+        {/* Drag handle */}
         <div
           className="relative z-10 flex justify-center pt-3 pb-4 cursor-grab active:cursor-grabbing touch-none select-none"
           onPointerDown={handlePointerDown}
@@ -148,7 +138,7 @@ export default function QuoteDetailSheet({ quote: initialQuote, onClose, onQuote
           <div className="w-10 h-[4px] rounded-full bg-white/40" />
         </div>
 
-        {/* ── Quote content ── */}
+        {/* Quote content */}
         <div className="relative z-10 px-8 pt-2">
           <p className="text-white text-[24px] font-semibold leading-snug mb-4">
             &ldquo;{quote.text}&rdquo;
@@ -170,8 +160,7 @@ export default function QuoteDetailSheet({ quote: initialQuote, onClose, onQuote
         </div>
       </div>
 
-      {/* ── Action buttons — outside the transformed div so fixed positioning
-           resolves to the viewport. Fade with the sheet; track drag. ── */}
+      {/* Action buttons — outside transformed div so fixed positioning resolves to viewport */}
       <div
         className="fixed inset-x-0 bottom-10 z-[50] flex justify-center gap-3 px-6 pointer-events-none"
         style={{
@@ -179,7 +168,16 @@ export default function QuoteDetailSheet({ quote: initialQuote, onClose, onQuote
           transition: isDragging ? "none" : "opacity 0.3s ease",
         }}
       >
-        {/* Share */}
+        <button
+          onClick={() => setShowEdit(true)}
+          aria-label="Edit quote"
+          className="pointer-events-auto flex items-center gap-2 px-5 py-3.5 rounded-full active:scale-95 transition-transform"
+          style={{ background: "rgba(30,30,30,0.72)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}
+        >
+          <Pencil size={16} strokeWidth={1.8} className="text-white" />
+          <span className="text-white text-[14px] font-medium">Edit</span>
+        </button>
+
         <button
           onClick={handleShare}
           aria-label="Share quote"
@@ -195,7 +193,6 @@ export default function QuoteDetailSheet({ quote: initialQuote, onClose, onQuote
           </span>
         </button>
 
-        {/* Save */}
         <button
           onClick={handleSave}
           aria-label="Save to photos"
@@ -207,6 +204,15 @@ export default function QuoteDetailSheet({ quote: initialQuote, onClose, onQuote
         </button>
       </div>
 
+      {/* EditSheet — outside transformed div */}
+      {showEdit && (
+        <EditSheet
+          initialText={quote.text}
+          initialSpeaker={quote.speaker}
+          onSave={handleEditSave}
+          onClose={() => setShowEdit(false)}
+        />
+      )}
     </>
   );
 }
