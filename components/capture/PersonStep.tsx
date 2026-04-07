@@ -31,15 +31,11 @@ export default function PersonStep({
     return () => clearTimeout(t);
   }, []);
 
-  // iOS Safari scrolls the document natively when a text input is focused,
-  // bypassing overflow:hidden on body/html. Reset it immediately on every scroll
-  // event to keep fixed elements locked in place.
+  // iOS Safari ignores overflow:hidden on body/html and scrolls the native layer
+  // when an input is focused. Reset immediately so fixed elements never shift.
   useEffect(() => {
-    const reset = () => {
-      document.documentElement.scrollTop = 0;
-      document.body.scrollTop = 0;
-    };
-    window.addEventListener("scroll", reset);
+    const reset = () => { window.scrollTo(0, 0); };
+    window.addEventListener("scroll", reset, { passive: true });
     return () => window.removeEventListener("scroll", reset);
   }, []);
 
@@ -57,10 +53,9 @@ export default function PersonStep({
   const hasName = name.trim().length > 0;
 
   return (
-    <div className="fixed inset-0 bg-white">
+    <div className="fixed inset-0 bg-white overflow-hidden touch-none">
       <div className="px-5 pt-14">
 
-        {/* Back arrow */}
         <button
           onClick={onBack}
           disabled={saving}
@@ -70,12 +65,10 @@ export default function PersonStep({
           <ArrowLeft size={16} strokeWidth={2} className="text-neutral-600" />
         </button>
 
-        {/* Title */}
         <h1 className="text-neutral-900 text-[32px] font-bold tracking-tight leading-tight mb-6">
           Who said it?
         </h1>
 
-        {/* Input */}
         <input
           ref={inputRef}
           type="text"
@@ -85,12 +78,11 @@ export default function PersonStep({
           placeholder="e.g Fergus Inns"
           disabled={saving}
           autoComplete="off"
-          className="w-full rounded-2xl bg-neutral-100 border-0 text-neutral-800 text-[16px] placeholder-neutral-400 px-4 py-4 focus:outline-none disabled:opacity-60"
+          className="w-full rounded-2xl bg-neutral-100 border-0 text-neutral-800 text-[16px] placeholder-neutral-400 px-4 py-4 focus:outline-none disabled:opacity-60 touch-auto"
         />
 
-        {/* Suggestion pills */}
         {suggestions.length > 0 && (
-          <div className="flex gap-2 overflow-x-auto shell-scroll mt-4 pb-0.5">
+          <div className="flex gap-2 overflow-x-auto shell-scroll mt-4 pb-0.5 touch-auto">
             {suggestions.map((s) => (
               <button
                 key={s}
@@ -107,23 +99,21 @@ export default function PersonStep({
           </div>
         )}
 
-        {/* Save — always in layout, opacity-only toggle, never moves */}
-        <div
-          className="mt-3"
+        {/* Save — always in layout, never moves.
+            Greyed out until name entered, then pops to black. */}
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="w-full rounded-full py-4 mt-3 font-semibold text-[15px]"
           style={{
-            opacity: hasName ? 1 : 0,
-            pointerEvents: hasName ? "auto" : "none",
-            transition: "opacity 0.18s ease-out",
+            backgroundColor: hasName ? "#171717" : "#e5e5e5",
+            color: hasName ? "#ffffff" : "#a3a3a3",
+            transform: hasName ? "scale(1)" : "scale(0.97)",
+            transition: "background-color 0.2s ease, color 0.2s ease, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)",
           }}
         >
-          <button
-            disabled={saving}
-            onClick={handleSave}
-            className="w-full rounded-full py-4 bg-neutral-900 text-white font-semibold text-[15px] active:scale-[0.98] transition-transform disabled:opacity-60"
-          >
-            {saving ? "Saving…" : "Save"}
-          </button>
-        </div>
+          {saving ? "Saving…" : "Save"}
+        </button>
 
       </div>
     </div>

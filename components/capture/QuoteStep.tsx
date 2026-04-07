@@ -18,15 +18,11 @@ export default function QuoteStep({ imageDataUrl: _imageDataUrl, onSubmit, onBac
     return () => clearTimeout(t);
   }, []);
 
-  // iOS Safari scrolls the document natively when a text input is focused,
-  // bypassing overflow:hidden on body/html. Reset it immediately on every scroll
-  // event to keep fixed elements locked in place.
+  // iOS Safari ignores overflow:hidden on body/html and scrolls the native layer
+  // when an input is focused. Reset immediately so fixed elements never shift.
   useEffect(() => {
-    const reset = () => {
-      document.documentElement.scrollTop = 0;
-      document.body.scrollTop = 0;
-    };
-    window.addEventListener("scroll", reset);
+    const reset = () => { window.scrollTo(0, 0); };
+    window.addEventListener("scroll", reset, { passive: true });
     return () => window.removeEventListener("scroll", reset);
   }, []);
 
@@ -39,10 +35,9 @@ export default function QuoteStep({ imageDataUrl: _imageDataUrl, onSubmit, onBac
   const hasText = text.trim().length > 0;
 
   return (
-    <div className="fixed inset-0 bg-white">
+    <div className="fixed inset-0 bg-white overflow-hidden touch-none">
       <div className="px-5 pt-14">
 
-        {/* Back arrow */}
         <button
           onClick={onBack}
           aria-label="Go back"
@@ -51,12 +46,10 @@ export default function QuoteStep({ imageDataUrl: _imageDataUrl, onSubmit, onBac
           <ArrowLeft size={16} strokeWidth={2} className="text-neutral-600" />
         </button>
 
-        {/* Title */}
         <h1 className="text-neutral-900 text-[32px] font-bold tracking-tight leading-tight mb-6">
           What was said?
         </h1>
 
-        {/* Input */}
         <textarea
           ref={textareaRef}
           value={text}
@@ -66,25 +59,24 @@ export default function QuoteStep({ imageDataUrl: _imageDataUrl, onSubmit, onBac
           }}
           placeholder="The quote goes here..."
           rows={5}
-          className="w-full resize-none rounded-2xl bg-neutral-100 border-0 text-neutral-800 text-[16px] leading-relaxed placeholder-neutral-400 px-4 py-4 focus:outline-none"
+          className="w-full resize-none rounded-2xl bg-neutral-100 border-0 text-neutral-800 text-[16px] leading-relaxed placeholder-neutral-400 px-4 py-4 focus:outline-none touch-auto"
         />
 
-        {/* Continue — always in layout, opacity-only toggle, never moves */}
-        <div
-          className="mt-3"
+        {/* Continue — always in layout, never moves.
+            Greyed out until typing begins, then pops to black. */}
+        <button
+          onClick={handleSubmit}
+          disabled={!hasText}
+          className="w-full rounded-full py-4 mt-3 font-semibold text-[15px]"
           style={{
-            opacity: hasText ? 1 : 0,
-            pointerEvents: hasText ? "auto" : "none",
-            transition: "opacity 0.18s ease-out",
+            backgroundColor: hasText ? "#171717" : "#e5e5e5",
+            color: hasText ? "#ffffff" : "#a3a3a3",
+            transform: hasText ? "scale(1)" : "scale(0.97)",
+            transition: "background-color 0.2s ease, color 0.2s ease, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)",
           }}
         >
-          <button
-            onClick={handleSubmit}
-            className="w-full rounded-full py-4 bg-neutral-900 text-white font-semibold text-[15px] active:scale-[0.98] transition-transform"
-          >
-            Continue
-          </button>
-        </div>
+          Continue
+        </button>
 
       </div>
     </div>
