@@ -1,12 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import { Pencil, Share2, ArrowDownToLine, Check } from "lucide-react";
+import { Share2, ArrowDownToLine, Check } from "lucide-react";
 import { QuoteRecord } from "@/lib/types";
 import { gradientForId, formatDate, shareQuoteCard, saveToPhotos } from "@/lib/utils";
-import { updateQuote } from "@/lib/quotesApi";
 import { useToast } from "@/context/ToastContext";
-import EditSheet from "@/components/ui/EditSheet";
 
 interface Props {
   quote: QuoteRecord;
@@ -35,7 +33,6 @@ export default function QuoteDetailSheet({ quote: initialQuote, onClose, onQuote
   const dragStartY = useRef(0);
 
   const [shareFeedback, setShareFeedback] = useState<ShareFeedback>("idle");
-  const [showEdit, setShowEdit] = useState(false);
 
   const dismiss = useCallback(() => {
     if (closingRef.current) return;
@@ -83,16 +80,6 @@ export default function QuoteDetailSheet({ quote: initialQuote, onClose, onQuote
     if (result === "saved") showToast("Tap \"Save Image\" to save to photos", "info");
     else if (result === "downloaded") showToast("Saved to downloads");
     else showToast("Could not save image", "error");
-  };
-
-  const handleEditSave = async (text: string, speaker: string) => {
-    await updateQuote(quote.id, { text, speaker });
-    const updated = { ...quote, text, speaker, updatedAt: Date.now() };
-    setQuote(updated);
-    onQuoteUpdated(updated);
-    setShowEdit(false);
-    window.dispatchEvent(new Event("quotd:changed"));
-    showToast("Changes saved");
   };
 
   const gradient = gradientForId(quote.id);
@@ -192,17 +179,6 @@ export default function QuoteDetailSheet({ quote: initialQuote, onClose, onQuote
           transition: isDragging ? "none" : "opacity 0.3s ease",
         }}
       >
-        {/* Edit */}
-        <button
-          onClick={() => setShowEdit(true)}
-          aria-label="Edit quote"
-          className="pointer-events-auto flex items-center gap-2 px-5 py-3.5 rounded-full active:scale-95 transition-transform"
-          style={{ background: "rgba(30,30,30,0.72)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}
-        >
-          <Pencil size={16} strokeWidth={1.8} className="text-white" />
-          <span className="text-white text-[14px] font-medium">Edit</span>
-        </button>
-
         {/* Share */}
         <button
           onClick={handleShare}
@@ -231,15 +207,6 @@ export default function QuoteDetailSheet({ quote: initialQuote, onClose, onQuote
         </button>
       </div>
 
-      {/* ── EditSheet ── */}
-      {showEdit && (
-        <EditSheet
-          initialText={quote.text}
-          initialSpeaker={quote.speaker}
-          onSave={handleEditSave}
-          onClose={() => setShowEdit(false)}
-        />
-      )}
     </>
   );
 }

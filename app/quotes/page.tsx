@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Plus, X } from "lucide-react";
 import { useCaptureFlow } from "@/context/CaptureContext";
 import { useAuth } from "@/context/AuthContext";
-import { getAllQuotes } from "@/lib/quotesApi";
+import { getAllQuotes, updateQuote } from "@/lib/quotesApi";
 import { QuoteRecord } from "@/lib/types";
 import {
   sortQuotes,
@@ -16,6 +16,10 @@ import {
 } from "@/lib/utils";
 import QuoteCard from "@/components/ui/QuoteCard";
 import QuoteDetailSheet from "@/components/ui/QuoteDetailSheet";
+import QuoteStep from "@/components/capture/QuoteStep";
+import PersonStep from "@/components/capture/PersonStep";
+
+type EditStep = "quote" | "person";
 
 export default function QuotesPage() {
   const { openCapture } = useCaptureFlow();
@@ -28,6 +32,14 @@ export default function QuotesPage() {
   const [selectedPerson, setSelectedPerson] = useState("All");
   const [filterOpen, setFilterOpen] = useState(false);
   const [selectedQuote, setSelectedQuote] = useState<QuoteRecord | null>(null);
+
+  // Swipe state — tracks which card has its edit button revealed
+  const [swipeOpenId, setSwipeOpenId] = useState<string | null>(null);
+
+  // Edit flow state
+  const [editingQuote, setEditingQuote] = useState<QuoteRecord | null>(null);
+  const [editStep, setEditStep] = useState<EditStep>("quote");
+  const [editQuoteText, setEditQuoteText] = useState("");
 
   useEffect(() => {
     if (!authLoading && !user) router.replace("/auth/signin");
@@ -56,33 +68,40 @@ export default function QuotesPage() {
   }, [quotes, selectedPerson]);
 
   const people = useMemo(() => getUniqueSpeakers(quotes), [quotes]);
-
   const displayed = useMemo(
     () => sortQuotes(filterByPerson(quotes, selectedPerson), "newest"),
     [quotes, selectedPerson]
   );
-
   const groups = useMemo(() => groupByMonth(displayed), [displayed]);
-
   const isFiltered = selectedPerson !== "All";
 
   const handleFilterPress = () => {
-    if (isFiltered) {
-      setFilterOpen(true);
-    } else {
-      setFilterOpen((o) => !o);
-    }
+    if (isFiltered) setFilterOpen(true);
+    else setFilterOpen((o) => !o);
   };
 
-  const handleSelectPerson = (person: string) => {
-    setSelectedPerson(person);
-    setFilterOpen(false);
+  const startEdit = (quote: QuoteRecord) => {
+    setEditingQuote(quote);
+    setEditQuoteText(quote.text);
+    setEditStep("quote");
   };
 
-  const handleClearFilter = () => {
-    setSelectedPerson("All");
-    setFilterOpen(false);
+  const handleEditQuoteSubmit = (text: string) => {
+    setEditQuoteText(text);
+    setEditStep("person");
   };
+
+  const handleEditSave = async (speaker: string) => {
+    if (!editingQuote) return;
+    await updateQuote(editingQuote.id, { text: editQuoteText, speaker });
+    const updated = { ...editingQuote, text: editQuoteText, speaker, updatedAt: Date.now() };
+    setQuotes((prev) => prev.map((q) => q.id === updated.id ? updated : q));
+    if (selectedQuote?.id === updated.id) setSelectedQuote(updated);
+    window.dispatchEvent(new Event("quotd:changed"));
+    setEditingQuote(null);
+  };
+
+  const closeEdit = () => setEditingQuote(null);
 
   return (
     <div className="absolute inset-0 bg-neutral-50 dark:bg-neutral-950 flex flex-col">
@@ -127,7 +146,7 @@ export default function QuotesPage() {
           {filterOpen && people.map((person) => (
             <button
               key={person}
-              onClick={() => handleSelectPerson(person)}
+              onClick={() => { setSelectedPerson(person); setFilterOpen(false); }}
               className="shrink-0 rounded-full px-4 py-1.5 text-[13px] border border-neutral-300 dark:border-neutral-600 bg-neutral-50 dark:bg-neutral-950 text-neutral-700 dark:text-neutral-300 whitespace-nowrap"
             >
               {person}
@@ -136,7 +155,7 @@ export default function QuotesPage() {
 
           {!filterOpen && isFiltered && (
             <button
-              onClick={handleClearFilter}
+              onClick={() => { setSelectedPerson("All"); setFilterOpen(false); }}
               className="shrink-0 flex items-center gap-2 rounded-full pl-4 pr-3 py-1.5 text-[13px] bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 whitespace-nowrap"
             >
               {selectedPerson}
@@ -180,7 +199,14 @@ export default function QuotesPage() {
                 </p>
                 <div className="flex flex-col gap-3 px-4">
                   {group.quotes.map((q) => (
-                    <QuoteCard key={q.id} quote={q} onClick={() => setSelectedQuote(q)} />
+                    <QuoteCard
+                      key={q.id}
+                      quote={q}
+                      onClick={() => { setSwipeOpenId(null); setSelectedQuote(q); }}
+                      onEdit={() => startEdit(q)}
+                      swipeOpenId={swipeOpenId}
+                      onSwipeOpen={setSwipeOpenId}
+                    />
                   ))}
                 </div>
               </div>
@@ -192,13 +218,7 @@ export default function QuotesPage() {
       {/* ── Bottom fade ── */}
       {quotes.length > 0 && (
         <div className="absolute bottom-0 left-0 right-0 h-36 pointer-events-none">
-          <div
-            className="absolute inset-0"
-            id="quotes-fade"
-            style={{
-              background: "linear-gradient(to top, rgba(250,250,250,1) 0%, rgba(250,250,250,0.95) 40%, rgba(250,250,250,0) 100%)",
-            }}
-          />
+          <div className="absolute inset-0" id="quotes-fade" />
         </div>
       )}
 
@@ -212,6 +232,29 @@ export default function QuotesPage() {
             setQuotes((prev) => prev.map((q) => q.id === updated.id ? updated : q));
           }}
         />
+      )}
+
+      {/* ── Edit flow overlay ── */}
+      {editingQuote && (
+        <div className="fixed inset-0 z-[60]">
+          {editStep === "quote" && (
+            <QuoteStep
+              imageDataUrl={editingQuote.imageDataUrl}
+              onSubmit={handleEditQuoteSubmit}
+              onBack={closeEdit}
+              initialText={editingQuote.text}
+            />
+          )}
+          {editStep === "person" && (
+            <PersonStep
+              imageDataUrl={editingQuote.imageDataUrl}
+              quoteText={editQuoteText}
+              onSave={handleEditSave}
+              onBack={() => setEditStep("quote")}
+              initialSpeaker={editingQuote.speaker}
+            />
+          )}
+        </div>
       )}
 
       {/* ── FAB ── */}

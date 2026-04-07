@@ -10,6 +10,7 @@ interface Props {
   quoteText: string;
   onSave: (speaker: string) => Promise<void>;
   onBack: () => void;
+  initialSpeaker?: string;
 }
 
 export default function PersonStep({
@@ -17,8 +18,9 @@ export default function PersonStep({
   quoteText: _quoteText,
   onSave,
   onBack,
+  initialSpeaker = "",
 }: Props) {
-  const [name, setName] = useState("");
+  const [name, setName] = useState(initialSpeaker);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);

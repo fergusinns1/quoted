@@ -7,10 +7,11 @@ interface Props {
   imageDataUrl: string | null;
   onSubmit: (text: string) => void;
   onBack: () => void;
+  initialText?: string;
 }
 
-export default function QuoteStep({ imageDataUrl: _imageDataUrl, onSubmit, onBack }: Props) {
-  const [text, setText] = useState("");
+export default function QuoteStep({ imageDataUrl: _imageDataUrl, onSubmit, onBack, initialText = "" }: Props) {
+  const [text, setText] = useState(initialText);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
