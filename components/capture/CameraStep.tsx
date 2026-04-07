@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { X, Camera, Image as ImageIcon, RefreshCw } from "lucide-react";
 import { useCamera } from "@/hooks/useCamera";
 
@@ -9,16 +9,10 @@ interface Props {
   onClose: () => void;
 }
 
-// ─── Primitives ───────────────────────────────────────────────────────────────
-
 function FrostedIconButton({
-  onClick,
-  label,
-  children,
+  onClick, label, children,
 }: {
-  onClick: () => void;
-  label: string;
-  children: React.ReactNode;
+  onClick: () => void; label: string; children: React.ReactNode;
 }) {
   return (
     <button
@@ -43,21 +37,21 @@ function ShutterButton({ onClick }: { onClick: () => void }) {
       onClick={onClick}
       aria-label="Take photo"
       className="w-[72px] h-[72px] rounded-full flex items-center justify-center active:scale-95 transition-transform"
-      style={{
-        border: "3px solid rgba(255,255,255,0.7)",
-        padding: 4,
-      }}
+      style={{ border: "3px solid rgba(255,255,255,0.7)", padding: 4 }}
     >
       <div className="w-full h-full rounded-full bg-white shadow-sm" />
     </button>
   );
 }
 
-// ─── Main component ───────────────────────────────────────────────────────────
-
 export default function CameraStep({ onCapture, onClose }: Props) {
   const { status, videoRef, streamRef, start, stop, capture } = useCamera();
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // When set, we are in the "confirm" state — same component, no unmount
+  const [capturedUrl, setCapturedUrl] = useState<string | null>(null);
+  // Whether the confirm UI has settled (drives CSS transition)
+  const [confirmed, setConfirmed] = useState(false);
 
   useEffect(() => {
     start();
@@ -67,9 +61,7 @@ export default function CameraStep({ onCapture, onClose }: Props) {
 
   useEffect(() => {
     if (status === "active" && videoRef.current && streamRef.current) {
-      if (!videoRef.current.srcObject) {
-        videoRef.current.srcObject = streamRef.current;
-      }
+      if (!videoRef.current.srcObject) videoRef.current.srcObject = streamRef.current;
     }
   }, [status, videoRef, streamRef]);
 
@@ -77,7 +69,10 @@ export default function CameraStep({ onCapture, onClose }: Props) {
     const dataUrl = capture();
     if (dataUrl) {
       stop();
-      onCapture(dataUrl);
+      setCapturedUrl(dataUrl);
+      // Next frame: trigger the CSS transition that shrinks the viewport and
+      // slides the buttons up
+      requestAnimationFrame(() => requestAnimationFrame(() => setConfirmed(true)));
     }
   };
 
@@ -87,25 +82,62 @@ export default function CameraStep({ onCapture, onClose }: Props) {
     const reader = new FileReader();
     reader.onload = (ev) => {
       const dataUrl = ev.target?.result as string;
-      if (dataUrl) { stop(); onCapture(dataUrl); }
+      if (dataUrl) {
+        stop();
+        setCapturedUrl(dataUrl);
+        requestAnimationFrame(() => requestAnimationFrame(() => setConfirmed(true)));
+      }
     };
     reader.readAsDataURL(file);
     e.target.value = "";
+  };
+
+  const handleRetake = () => {
+    setConfirmed(false);
+    setCapturedUrl(null);
+    // Give transition time to reverse before restarting stream
+    setTimeout(() => start(), 300);
   };
 
   const isActive = status === "active";
   const isRequesting = status === "idle" || status === "requesting";
   const isFallback = status === "denied" || status === "unavailable" || status === "error";
 
+  // Height of the image/video viewport:
+  // - camera mode: fills everything (inset 6px on all sides)
+  // - confirm mode: shrinks to leave room for buttons below
+  const viewportHeight = confirmed
+    ? "calc(72dvh - 6px)"
+    : "calc(100% - 12px)";
+
   return (
-    <div className="absolute inset-0 bg-white">
-      {/* Camera viewport — 6 px white inset acts as the border frame */}
+    <div className="absolute inset-0 bg-white flex flex-col overflow-hidden">
+
+      {/* ── Image/video viewport ── */}
       <div
-        className="absolute inset-[6px] overflow-hidden bg-neutral-200"
-        style={{ borderRadius: 38 }}
+        className="mx-[6px] mt-[6px] overflow-hidden bg-neutral-200 shrink-0 relative"
+        style={{
+          borderRadius: 38,
+          height: viewportHeight,
+          transition: "height 0.48s cubic-bezier(0.32, 0.72, 0, 1)",
+        }}
       >
+        {/* Captured image — sits on top of video, fades in on capture */}
+        {capturedUrl && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={capturedUrl}
+            alt="Captured photo"
+            className="absolute inset-0 w-full h-full object-cover z-10"
+            style={{
+              opacity: capturedUrl ? 1 : 0,
+              transition: "opacity 0.15s ease",
+            }}
+          />
+        )}
+
         {/* Live video */}
-        {isActive && (
+        {!capturedUrl && isActive && (
           <video
             ref={(el) => {
               (videoRef as React.MutableRefObject<HTMLVideoElement | null>).current = el;
@@ -118,8 +150,8 @@ export default function CameraStep({ onCapture, onClose }: Props) {
           />
         )}
 
-        {/* Requesting state */}
-        {isRequesting && (
+        {/* Requesting */}
+        {isRequesting && !capturedUrl && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-neutral-100">
             <div className="w-16 h-16 rounded-full bg-neutral-200 flex items-center justify-center">
               <Camera size={26} className="text-neutral-400" strokeWidth={1.4} />
@@ -128,8 +160,8 @@ export default function CameraStep({ onCapture, onClose }: Props) {
           </div>
         )}
 
-        {/* Fallback / denied state */}
-        {isFallback && (
+        {/* Fallback */}
+        {isFallback && !capturedUrl && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-5 px-8 bg-neutral-100">
             <div className="w-16 h-16 rounded-full bg-neutral-200 flex items-center justify-center">
               <Camera size={26} className="text-neutral-400" strokeWidth={1.4} />
@@ -144,65 +176,76 @@ export default function CameraStep({ onCapture, onClose }: Props) {
                   : "Upload a photo from your device to continue."}
               </p>
             </div>
-            <div className="flex flex-col items-center gap-2.5 w-full">
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="flex items-center gap-2 rounded-full px-7 py-3.5 bg-neutral-900 text-white font-semibold text-sm w-full justify-center active:scale-[0.97] transition-transform"
-              >
-                <ImageIcon size={15} />
-                Upload photo
-              </button>
-              {status === "denied" && (
-                <button
-                  onClick={() => start()}
-                  className="flex items-center gap-1.5 text-neutral-400 text-xs"
-                >
-                  <RefreshCw size={12} />
-                  Try again
-                </button>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Bottom fog gradient — only over live camera */}
-        {isActive && (
-          <div
-            className="absolute bottom-0 inset-x-0 h-[38%] pointer-events-none"
-            style={{
-              background: "linear-gradient(to top, rgba(0,0,0,0.44) 0%, rgba(0,0,0,0) 100%)",
-            }}
-          />
-        )}
-
-        {/* Floating controls */}
-        {isActive && (
-          <div className="absolute bottom-9 inset-x-0 flex items-center justify-between px-8">
-            <FrostedIconButton onClick={onClose} label="Close camera">
-              <X size={17} strokeWidth={2} className="text-white" />
-            </FrostedIconButton>
-
-            <ShutterButton onClick={handleShutter} />
-
-            <FrostedIconButton
+            <button
               onClick={() => fileInputRef.current?.click()}
-              label="Upload from gallery"
+              className="flex items-center gap-2 rounded-full px-7 py-3.5 bg-neutral-900 text-white font-semibold text-sm w-full justify-center active:scale-[0.97] transition-transform"
             >
-              <ImageIcon size={16} strokeWidth={1.8} className="text-white" />
-            </FrostedIconButton>
+              <ImageIcon size={15} />
+              Upload photo
+            </button>
+            {status === "denied" && (
+              <button onClick={() => start()} className="flex items-center gap-1.5 text-neutral-400 text-xs">
+                <RefreshCw size={12} /> Try again
+              </button>
+            )}
           </div>
         )}
 
-        {/* Non-active close button (requesting / fallback) */}
-        {!isActive && (
+        {/* Bottom fog + camera controls — hidden once captured */}
+        {isActive && !capturedUrl && (
+          <>
+            <div
+              className="absolute bottom-0 inset-x-0 h-[38%] pointer-events-none z-10"
+              style={{ background: "linear-gradient(to top, rgba(0,0,0,0.44) 0%, rgba(0,0,0,0) 100%)" }}
+            />
+            <div className="absolute bottom-9 inset-x-0 flex items-center justify-between px-8 z-20">
+              <FrostedIconButton onClick={onClose} label="Close camera">
+                <X size={17} strokeWidth={2} className="text-white" />
+              </FrostedIconButton>
+              <ShutterButton onClick={handleShutter} />
+              <FrostedIconButton onClick={() => fileInputRef.current?.click()} label="Upload from gallery">
+                <ImageIcon size={16} strokeWidth={1.8} className="text-white" />
+              </FrostedIconButton>
+            </div>
+          </>
+        )}
+
+        {/* Non-active close */}
+        {!isActive && !capturedUrl && (
           <button
             onClick={onClose}
             aria-label="Close"
-            className="absolute top-5 left-5 w-9 h-9 rounded-full bg-white/80 flex items-center justify-center"
+            className="absolute top-5 left-5 w-9 h-9 rounded-full bg-white/80 flex items-center justify-center z-10"
           >
             <X size={16} strokeWidth={2} className="text-neutral-600" />
           </button>
         )}
+      </div>
+
+      {/* ── Confirm buttons — slide up from below as viewport shrinks ── */}
+      <div
+        className="flex-1 flex flex-col justify-center px-5 gap-2.5"
+        style={{
+          opacity: confirmed ? 1 : 0,
+          transform: confirmed ? "translateY(0)" : "translateY(24px)",
+          transition: confirmed
+            ? "opacity 0.22s ease 0.22s, transform 0.3s cubic-bezier(0.32, 0.72, 0, 1) 0.18s"
+            : "none",
+          pointerEvents: confirmed ? "auto" : "none",
+        }}
+      >
+        <button
+          onClick={() => capturedUrl && onCapture(capturedUrl)}
+          className="w-full rounded-full py-4 bg-neutral-900 text-white font-semibold text-[15px] active:scale-[0.98] transition-transform"
+        >
+          Quote it
+        </button>
+        <button
+          onClick={handleRetake}
+          className="w-full rounded-full py-4 bg-neutral-100 text-neutral-700 font-semibold text-[15px] active:scale-[0.98] transition-transform"
+        >
+          Retake it
+        </button>
       </div>
 
       <input

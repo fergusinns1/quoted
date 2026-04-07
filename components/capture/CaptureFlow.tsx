@@ -8,11 +8,10 @@ import { useAuth } from "@/context/AuthContext";
 import { saveQuote } from "@/lib/quotesApi";
 import { compressImage } from "@/lib/imageUtils";
 import CameraStep from "./CameraStep";
-import ConfirmStep from "./ConfirmStep";
 import QuoteStep from "./QuoteStep";
 import PersonStep from "./PersonStep";
 
-type Step = "camera" | "confirm" | "quote" | "person";
+type Step = "camera" | "quote" | "person";
 
 export default function CaptureFlow() {
   const { isOpen, closeCapture } = useCaptureFlow();
@@ -35,19 +34,11 @@ export default function CaptureFlow() {
     closeCapture();
   }, [reset, closeCapture]);
 
+  // Called by CameraStep only after the user taps "Quote it"
   const handleImageCaptured = useCallback(async (dataUrl: string) => {
     const compressed = await compressImage(dataUrl);
     setImageDataUrl(compressed);
-    setStep("confirm");
-  }, []);
-
-  const handleConfirm = useCallback(() => {
     setStep("quote");
-  }, []);
-
-  const handleRetake = useCallback(() => {
-    setImageDataUrl(null);
-    setStep("camera");
   }, []);
 
   const handleQuoteSubmit = useCallback((text: string) => {
@@ -93,18 +84,11 @@ export default function CaptureFlow() {
       {step === "camera" && (
         <CameraStep onCapture={handleImageCaptured} onClose={handleClose} />
       )}
-      {step === "confirm" && imageDataUrl && (
-        <ConfirmStep
-          imageDataUrl={imageDataUrl}
-          onConfirm={handleConfirm}
-          onRetake={handleRetake}
-        />
-      )}
       {step === "quote" && (
         <QuoteStep
           imageDataUrl={imageDataUrl}
           onSubmit={handleQuoteSubmit}
-          onBack={() => setStep("confirm")}
+          onBack={() => setStep("camera")}
         />
       )}
       {step === "person" && (
