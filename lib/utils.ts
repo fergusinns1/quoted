@@ -289,6 +289,7 @@ export async function renderQuoteCard(quote: QuoteRecord): Promise<Blob | null> 
       canvas.toBlob((blob) => resolve(blob), "image/png", 0.95);
     };
     img.onerror = () => resolve(null);
+    img.crossOrigin = "anonymous";
     img.src = quote.imageDataUrl!;
   });
 }
@@ -302,22 +303,36 @@ export async function renderQuoteCard(quote: QuoteRecord): Promise<Blob | null> 
 export async function shareQuoteCard(
   quote: QuoteRecord
 ): Promise<"shared" | "copied" | "cancelled"> {
-  const blob = await renderQuoteCard(quote);
   const fallbackText = `\u201C${quote.text}\u201D \u2014 ${quote.speaker}`;
+  const slug = quote.speaker.replace(/\s+/g, "-").toLowerCase();
+  const filename = `quotd-${slug}.png`;
 
-  if (blob && typeof navigator !== "undefined" && "share" in navigator && navigator.canShare?.({ files: [new File([blob], "quote.png", { type: "image/png" })] })) {
+  // Get an image blob — fetch the signed URL directly for image quotes
+  // (avoids canvas CORS taint). For gradient quotes, render via canvas.
+  let imageBlob: Blob | null = null;
+  if (quote.imageDataUrl) {
     try {
-      await navigator.share({
-        title: `Quote by ${quote.speaker}`,
-        files: [new File([blob], `quotd-${quote.speaker.replace(/\s+/g, "-").toLowerCase()}.png`, { type: "image/png" })],
-      });
-      return "shared";
-    } catch (err) {
-      if (err instanceof Error && err.name === "AbortError") return "cancelled";
+      const res = await fetch(quote.imageDataUrl);
+      imageBlob = await res.blob();
+    } catch { /* ignore */ }
+  } else {
+    imageBlob = await renderQuoteCard(quote);
+  }
+
+  if (imageBlob && typeof navigator !== "undefined" && "share" in navigator) {
+    const file = new File([imageBlob], filename, { type: imageBlob.type || "image/jpeg" });
+    if (navigator.canShare?.({ files: [file] })) {
+      try {
+        await navigator.share({ title: `Quote by ${quote.speaker}`, files: [file] });
+        return "shared";
+      } catch (err) {
+        if (err instanceof Error && err.name === "AbortError") return "cancelled";
+        // Other error — fall through to text share
+      }
     }
   }
 
-  // Fallback: share/copy text
+  // Fallback: share or copy text
   if (typeof navigator !== "undefined" && "share" in navigator) {
     try {
       await navigator.share({ title: `Quote by ${quote.speaker}`, text: fallbackText });
@@ -384,24 +399,23 @@ export async function saveToPhotos(
   const slug = quote.speaker.replace(/\s+/g, "-").toLowerCase();
   const filename = `quotd-${slug}-${quote.id.slice(0, 6)}.png`;
 
-  const blob = await renderQuoteCard(quote);
-
-  // Use the raw signed image as fallback if canvas render fails
-  let imageBlob: Blob | null = blob;
-  if (!imageBlob && quote.imageDataUrl) {
+  // Fetch the signed URL directly for image quotes to avoid canvas CORS taint.
+  // For gradient quotes (no image), render via canvas.
+  let imageBlob: Blob | null = null;
+  if (quote.imageDataUrl) {
     try {
       const res = await fetch(quote.imageDataUrl);
       imageBlob = await res.blob();
-    } catch {
-      // ignore
-    }
+    } catch { /* ignore */ }
+  } else {
+    imageBlob = await renderQuoteCard(quote);
   }
 
   if (!imageBlob) return "failed";
 
-  const file = new File([imageBlob], filename, { type: "image/png" });
+  const file = new File([imageBlob], filename, { type: imageBlob.type || "image/jpeg" });
 
-  // Mobile path: Web Share API with image file
+  // Mobile: Web Share API opens native share sheet (user taps "Save Image")
   if (
     typeof navigator !== "undefined" &&
     "share" in navigator &&
@@ -411,12 +425,9 @@ export async function saveToPhotos(
       await navigator.share({ files: [file] });
       return "saved";
     } catch (err) {
-      // AbortError = user dismissed the share sheet — not a real failure
-      if (err instanceof Error && err.name !== "AbortError") {
-        // fall through to download
-      } else {
-        return "failed";
-      }
+      // AbortError = user dismissed the share sheet — not a failure
+      if (err instanceof Error && err.name === "AbortError") return "saved";
+      // Any other error: fall through to download
     }
   }
 
