@@ -4,7 +4,6 @@ import { useState, useEffect, useRef } from "react";
 import { ArrowLeft } from "lucide-react";
 import { getAllQuotes } from "@/lib/quotesApi";
 import { rankSpeakers } from "@/lib/utils";
-import { useKeyboardHeight } from "@/hooks/useKeyboardHeight";
 
 interface Props {
   imageDataUrl: string | null;
@@ -23,7 +22,6 @@ export default function PersonStep({
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-  const keyboardHeight = useKeyboardHeight();
 
   useEffect(() => {
     const t = setTimeout(() => inputRef.current?.focus(), 80);
@@ -31,6 +29,18 @@ export default function PersonStep({
       .then((quotes) => setSuggestions(rankSpeakers(quotes)))
       .catch(() => {});
     return () => clearTimeout(t);
+  }, []);
+
+  // iOS Safari scrolls the document natively when a text input is focused,
+  // bypassing overflow:hidden on body/html. Reset it immediately on every scroll
+  // event to keep fixed elements locked in place.
+  useEffect(() => {
+    const reset = () => {
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+    };
+    window.addEventListener("scroll", reset);
+    return () => window.removeEventListener("scroll", reset);
   }, []);
 
   const handleSave = async () => {
@@ -45,14 +55,12 @@ export default function PersonStep({
   };
 
   const hasName = name.trim().length > 0;
-  const btnBottom = keyboardHeight > 0 ? keyboardHeight + 8 : 40;
 
   return (
-    // Full-screen, always opaque — never shrinks, never lets content bleed through
-    <div className="fixed inset-0 bg-white overflow-hidden">
-
-      {/* Top stack — stays at top regardless of keyboard state */}
+    <div className="fixed inset-0 bg-white">
       <div className="px-5 pt-14">
+
+        {/* Back arrow */}
         <button
           onClick={onBack}
           disabled={saving}
@@ -62,10 +70,12 @@ export default function PersonStep({
           <ArrowLeft size={16} strokeWidth={2} className="text-neutral-600" />
         </button>
 
+        {/* Title */}
         <h1 className="text-neutral-900 text-[32px] font-bold tracking-tight leading-tight mb-6">
           Who said it?
         </h1>
 
+        {/* Input */}
         <input
           ref={inputRef}
           type="text"
@@ -96,25 +106,25 @@ export default function PersonStep({
             ))}
           </div>
         )}
-      </div>
 
-      {/* Save — fades in on first keystroke, tracks keyboard position */}
-      <div
-        className="fixed left-0 right-0 px-5"
-        style={{
-          bottom: btnBottom,
-          opacity: hasName ? 1 : 0,
-          pointerEvents: hasName ? "auto" : "none",
-          transition: "bottom 0.25s ease-out, opacity 0.2s ease-out",
-        }}
-      >
-        <button
-          disabled={saving}
-          onClick={handleSave}
-          className="w-full rounded-full py-4 bg-neutral-900 text-white font-semibold text-[15px] active:scale-[0.98] transition-transform disabled:opacity-60"
+        {/* Save — always in layout, opacity-only toggle, never moves */}
+        <div
+          className="mt-3"
+          style={{
+            opacity: hasName ? 1 : 0,
+            pointerEvents: hasName ? "auto" : "none",
+            transition: "opacity 0.18s ease-out",
+          }}
         >
-          {saving ? "Saving…" : "Save"}
-        </button>
+          <button
+            disabled={saving}
+            onClick={handleSave}
+            className="w-full rounded-full py-4 bg-neutral-900 text-white font-semibold text-[15px] active:scale-[0.98] transition-transform disabled:opacity-60"
+          >
+            {saving ? "Saving…" : "Save"}
+          </button>
+        </div>
+
       </div>
     </div>
   );
