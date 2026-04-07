@@ -33,9 +33,6 @@ export default function QuotesPage() {
   const [filterOpen, setFilterOpen] = useState(false);
   const [selectedQuote, setSelectedQuote] = useState<QuoteRecord | null>(null);
 
-  // Swipe state — tracks which card has its edit button revealed
-  const [swipeOpenId, setSwipeOpenId] = useState<string | null>(null);
-
   // Edit flow state
   const [editingQuote, setEditingQuote] = useState<QuoteRecord | null>(null);
   const [editStep, setEditStep] = useState<EditStep>("quote");
@@ -93,12 +90,15 @@ export default function QuotesPage() {
 
   const handleEditSave = async (speaker: string) => {
     if (!editingQuote) return;
-    await updateQuote(editingQuote.id, { text: editQuoteText, speaker });
-    const updated = { ...editingQuote, text: editQuoteText, speaker, updatedAt: Date.now() };
-    setQuotes((prev) => prev.map((q) => q.id === updated.id ? updated : q));
-    if (selectedQuote?.id === updated.id) setSelectedQuote(updated);
-    window.dispatchEvent(new Event("quotd:changed"));
-    setEditingQuote(null);
+    try {
+      await updateQuote(editingQuote.id, { text: editQuoteText, speaker });
+      const updated = { ...editingQuote, text: editQuoteText, speaker, updatedAt: Date.now() };
+      setQuotes((prev) => prev.map((q) => q.id === updated.id ? updated : q));
+      if (selectedQuote?.id === updated.id) setSelectedQuote(updated);
+      window.dispatchEvent(new Event("quotd:changed"));
+    } finally {
+      setEditingQuote(null);
+    }
   };
 
   const closeEdit = () => setEditingQuote(null);
@@ -202,10 +202,8 @@ export default function QuotesPage() {
                     <QuoteCard
                       key={q.id}
                       quote={q}
-                      onClick={() => { setSwipeOpenId(null); setSelectedQuote(q); }}
+                      onClick={() => setSelectedQuote(q)}
                       onEdit={() => startEdit(q)}
-                      swipeOpenId={swipeOpenId}
-                      onSwipeOpen={setSwipeOpenId}
                     />
                   ))}
                 </div>
