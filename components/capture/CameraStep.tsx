@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { X, Camera, Image as ImageIcon, RefreshCw } from "lucide-react";
 import { useCamera } from "@/hooks/useCamera";
+import { compressImage } from "@/lib/imageUtils";
 
 interface Props {
   onCapture: (dataUrl: string) => void;
@@ -48,10 +49,14 @@ export default function CameraStep({ onCapture, onClose }: Props) {
   const { status, videoRef, streamRef, start, stop, capture } = useCamera();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // When set, we are in the "confirm" state — same component, no unmount
   const [capturedUrl, setCapturedUrl] = useState<string | null>(null);
-  // Whether the confirm UI has settled (drives CSS transition)
+  // Compression runs in the background immediately at shutter press
+  const compressedRef = useRef<Promise<string> | null>(null);
+
+  // Whether the confirm layout has animated in
   const [confirmed, setConfirmed] = useState(false);
+  // Exit fade before handing off to next step
+  const [exiting, setExiting] = useState(false);
 
   useEffect(() => {
     start();
@@ -65,15 +70,18 @@ export default function CameraStep({ onCapture, onClose }: Props) {
     }
   }, [status, videoRef, streamRef]);
 
+  const doCapture = (dataUrl: string) => {
+    stop();
+    setCapturedUrl(dataUrl);
+    // Start compression immediately — will be ready long before user taps "Quote it"
+    compressedRef.current = compressImage(dataUrl);
+    // Two rAFs to ensure height transition starts after paint
+    requestAnimationFrame(() => requestAnimationFrame(() => setConfirmed(true)));
+  };
+
   const handleShutter = () => {
     const dataUrl = capture();
-    if (dataUrl) {
-      stop();
-      setCapturedUrl(dataUrl);
-      // Next frame: trigger the CSS transition that shrinks the viewport and
-      // slides the buttons up
-      requestAnimationFrame(() => requestAnimationFrame(() => setConfirmed(true)));
-    }
+    if (dataUrl) doCapture(dataUrl);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -82,57 +90,63 @@ export default function CameraStep({ onCapture, onClose }: Props) {
     const reader = new FileReader();
     reader.onload = (ev) => {
       const dataUrl = ev.target?.result as string;
-      if (dataUrl) {
-        stop();
-        setCapturedUrl(dataUrl);
-        requestAnimationFrame(() => requestAnimationFrame(() => setConfirmed(true)));
-      }
+      if (dataUrl) doCapture(dataUrl);
     };
     reader.readAsDataURL(file);
     e.target.value = "";
   };
 
   const handleRetake = () => {
+    setExiting(false);
     setConfirmed(false);
     setCapturedUrl(null);
-    // Give transition time to reverse before restarting stream
-    setTimeout(() => start(), 300);
+    compressedRef.current = null;
+    setTimeout(() => start(), 350);
+  };
+
+  const handleConfirm = async () => {
+    if (!capturedUrl) return;
+    // Fade the whole screen out, then hand off (compression is already done)
+    setExiting(true);
+    const compressed = compressedRef.current
+      ? await compressedRef.current
+      : capturedUrl;
+    // Small delay so the fade is visible before unmount
+    setTimeout(() => onCapture(compressed), 220);
   };
 
   const isActive = status === "active";
   const isRequesting = status === "idle" || status === "requesting";
   const isFallback = status === "denied" || status === "unavailable" || status === "error";
 
-  // Height of the image/video viewport:
-  // - camera mode: fills everything (inset 6px on all sides)
-  // - confirm mode: shrinks to leave room for buttons below
   const viewportHeight = confirmed
     ? "calc(72dvh - 6px)"
     : "calc(100% - 12px)";
 
   return (
-    <div className="absolute inset-0 bg-white flex flex-col overflow-hidden">
-
+    <div
+      className="absolute inset-0 bg-white flex flex-col overflow-hidden"
+      style={{
+        opacity: exiting ? 0 : 1,
+        transition: exiting ? "opacity 0.2s ease-out" : "none",
+      }}
+    >
       {/* ── Image/video viewport ── */}
       <div
         className="mx-[6px] mt-[6px] overflow-hidden bg-neutral-200 shrink-0 relative"
         style={{
           borderRadius: 38,
           height: viewportHeight,
-          transition: "height 0.48s cubic-bezier(0.32, 0.72, 0, 1)",
+          transition: "height 1.5s cubic-bezier(0.32, 0.72, 0, 1)",
         }}
       >
-        {/* Captured image — sits on top of video, fades in on capture */}
+        {/* Captured still — fades in instantly over the frozen video frame */}
         {capturedUrl && (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={capturedUrl}
             alt="Captured photo"
             className="absolute inset-0 w-full h-full object-cover z-10"
-            style={{
-              opacity: capturedUrl ? 1 : 0,
-              transition: "opacity 0.15s ease",
-            }}
           />
         )}
 
@@ -191,7 +205,7 @@ export default function CameraStep({ onCapture, onClose }: Props) {
           </div>
         )}
 
-        {/* Bottom fog + camera controls — hidden once captured */}
+        {/* Bottom fog + camera controls */}
         {isActive && !capturedUrl && (
           <>
             <div
@@ -222,20 +236,21 @@ export default function CameraStep({ onCapture, onClose }: Props) {
         )}
       </div>
 
-      {/* ── Confirm buttons — slide up from below as viewport shrinks ── */}
+      {/* ── Confirm buttons — fade + slide in after viewport settles ── */}
       <div
         className="flex-1 flex flex-col justify-center px-5 gap-2.5"
         style={{
           opacity: confirmed ? 1 : 0,
-          transform: confirmed ? "translateY(0)" : "translateY(24px)",
+          transform: confirmed ? "translateY(0)" : "translateY(20px)",
+          // Delay matches the bulk of the 1.5s height transition
           transition: confirmed
-            ? "opacity 0.22s ease 0.22s, transform 0.3s cubic-bezier(0.32, 0.72, 0, 1) 0.18s"
+            ? "opacity 0.3s ease 1.1s, transform 0.35s cubic-bezier(0.32, 0.72, 0, 1) 1.05s"
             : "none",
           pointerEvents: confirmed ? "auto" : "none",
         }}
       >
         <button
-          onClick={() => capturedUrl && onCapture(capturedUrl)}
+          onClick={handleConfirm}
           className="w-full rounded-full py-4 bg-neutral-900 text-white font-semibold text-[15px] active:scale-[0.98] transition-transform"
         >
           Quote it
