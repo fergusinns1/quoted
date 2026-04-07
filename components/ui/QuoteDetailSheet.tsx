@@ -80,7 +80,7 @@ export default function QuoteDetailSheet({ quote: initialQuote, onClose, onQuote
 
   const handleSave = async () => {
     const result = await saveToPhotos(quote);
-    if (result === "saved") showToast("Image saved to photos");
+    if (result === "saved") showToast("Tap \"Save Image\" to save to photos", "info");
     else if (result === "downloaded") showToast("Saved to downloads");
     else showToast("Could not save image", "error");
   };

@@ -240,10 +240,20 @@ export async function renderQuoteCard(quote: QuoteRecord): Promise<Blob | null> 
     });
   }
 
+  // Fetch the signed URL as a blob first, then load via objectURL.
+  // objectURLs are same-origin so canvas.toBlob() won't be tainted.
+  let objectUrl: string | null = null;
+  try {
+    const res = await fetch(quote.imageDataUrl!);
+    const rawBlob = await res.blob();
+    objectUrl = URL.createObjectURL(rawBlob);
+  } catch {
+    return null;
+  }
+
   return new Promise((resolve) => {
     const img = new Image();
     img.onload = () => {
-      // Fixed portrait output
       const W = 1080;
       const H = 1440;
       const cornerR = 80;
@@ -253,7 +263,6 @@ export async function renderQuoteCard(quote: QuoteRecord): Promise<Blob | null> 
       canvas.height = H;
       const ctx = canvas.getContext("2d")!;
 
-      // ── Rounded-corner clip ───────────────────────────────────────────────
       ctx.beginPath();
       ctx.moveTo(cornerR, 0);
       ctx.arcTo(W, 0, W, H, cornerR);
@@ -263,7 +272,6 @@ export async function renderQuoteCard(quote: QuoteRecord): Promise<Blob | null> 
       ctx.closePath();
       ctx.clip();
 
-      // ── Cover-fit image (object-fit: cover, centered) ─────────────────────
       const imgAspect = img.width / img.height;
       const canvasAspect = W / H;
       let sx = 0, sy = 0, sw = img.width, sh = img.height;
@@ -276,7 +284,6 @@ export async function renderQuoteCard(quote: QuoteRecord): Promise<Blob | null> 
       }
       ctx.drawImage(img, sx, sy, sw, sh, 0, 0, W, H);
 
-      // ── Bottom gradient vignette ──────────────────────────────────────────
       const grad = ctx.createLinearGradient(0, H * 0.38, 0, H);
       grad.addColorStop(0, "rgba(0,0,0,0)");
       grad.addColorStop(0.5, "rgba(0,0,0,0.52)");
@@ -286,11 +293,11 @@ export async function renderQuoteCard(quote: QuoteRecord): Promise<Blob | null> 
 
       renderTextAndPills(ctx, quote, W, H);
 
+      URL.revokeObjectURL(objectUrl!);
       canvas.toBlob((blob) => resolve(blob), "image/png", 0.95);
     };
-    img.onerror = () => resolve(null);
-    img.crossOrigin = "anonymous";
-    img.src = quote.imageDataUrl!;
+    img.onerror = () => { URL.revokeObjectURL(objectUrl!); resolve(null); };
+    img.src = objectUrl!;
   });
 }
 
@@ -307,27 +314,17 @@ export async function shareQuoteCard(
   const slug = quote.speaker.replace(/\s+/g, "-").toLowerCase();
   const filename = `quotd-${slug}.png`;
 
-  // Get an image blob — fetch the signed URL directly for image quotes
-  // (avoids canvas CORS taint). For gradient quotes, render via canvas.
-  let imageBlob: Blob | null = null;
-  if (quote.imageDataUrl) {
-    try {
-      const res = await fetch(quote.imageDataUrl);
-      imageBlob = await res.blob();
-    } catch { /* ignore */ }
-  } else {
-    imageBlob = await renderQuoteCard(quote);
-  }
+  // Always render the composed card (text + pills overlaid on image/gradient)
+  const imageBlob = await renderQuoteCard(quote);
 
   if (imageBlob && typeof navigator !== "undefined" && "share" in navigator) {
-    const file = new File([imageBlob], filename, { type: imageBlob.type || "image/jpeg" });
+    const file = new File([imageBlob], filename, { type: "image/png" });
     if (navigator.canShare?.({ files: [file] })) {
       try {
         await navigator.share({ title: `Quote by ${quote.speaker}`, files: [file] });
         return "shared";
       } catch (err) {
         if (err instanceof Error && err.name === "AbortError") return "cancelled";
-        // Other error — fall through to text share
       }
     }
   }
@@ -399,21 +396,19 @@ export async function saveToPhotos(
   const slug = quote.speaker.replace(/\s+/g, "-").toLowerCase();
   const filename = `quotd-${slug}-${quote.id.slice(0, 6)}.png`;
 
-  // Fetch the signed URL directly for image quotes to avoid canvas CORS taint.
-  // For gradient quotes (no image), render via canvas.
-  let imageBlob: Blob | null = null;
-  if (quote.imageDataUrl) {
+  // Render the composed card (text + pills overlaid on image/gradient).
+  // Falls back to raw image fetch if canvas render fails.
+  let imageBlob: Blob | null = await renderQuoteCard(quote);
+  if (!imageBlob && quote.imageDataUrl) {
     try {
       const res = await fetch(quote.imageDataUrl);
       imageBlob = await res.blob();
     } catch { /* ignore */ }
-  } else {
-    imageBlob = await renderQuoteCard(quote);
   }
 
   if (!imageBlob) return "failed";
 
-  const file = new File([imageBlob], filename, { type: imageBlob.type || "image/jpeg" });
+  const file = new File([imageBlob], filename, { type: "image/png" });
 
   // Mobile: Web Share API opens native share sheet (user taps "Save Image")
   if (
@@ -425,9 +420,8 @@ export async function saveToPhotos(
       await navigator.share({ files: [file] });
       return "saved";
     } catch (err) {
-      // AbortError = user dismissed the share sheet — not a failure
       if (err instanceof Error && err.name === "AbortError") return "saved";
-      // Any other error: fall through to download
+      // Other error: fall through to download
     }
   }
 
