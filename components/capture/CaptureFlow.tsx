@@ -89,7 +89,7 @@ export default function CaptureFlow() {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50">
+    <div className="fixed inset-0 z-50 bg-white overflow-hidden">
       {step === "camera" && (
         <CameraStep onCapture={handleImageCaptured} onClose={handleClose} />
       )}

@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { ArrowLeft } from "lucide-react";
-import { useVisualViewport } from "@/hooks/useVisualViewport";
+import { useKeyboardHeight } from "@/hooks/useKeyboardHeight";
 
 interface Props {
   imageDataUrl: string | null;
@@ -13,7 +13,7 @@ interface Props {
 export default function QuoteStep({ imageDataUrl: _imageDataUrl, onSubmit, onBack }: Props) {
   const [text, setText] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const { top, height } = useVisualViewport();
+  const keyboardHeight = useKeyboardHeight();
 
   useEffect(() => {
     const t = setTimeout(() => textareaRef.current?.focus(), 80);
@@ -27,16 +27,15 @@ export default function QuoteStep({ imageDataUrl: _imageDataUrl, onSubmit, onBac
   };
 
   const hasText = text.trim().length > 0;
+  // Button bottom: ride just above the keyboard, or sit at a safe bottom distance
+  const btnBottom = keyboardHeight > 0 ? keyboardHeight + 8 : 40;
 
   return (
-    // Container tracks the visual viewport exactly — stays locked to the
-    // visible area whether or not the keyboard is open.
-    <div
-      style={{ position: "fixed", left: 0, right: 0, top, height }}
-      className="bg-white flex flex-col overflow-hidden"
-    >
-      {/* Top stack — always visible at the top of the visual viewport */}
-      <div className="px-5 pt-14 shrink-0">
+    // Full-screen, always opaque — never shrinks, never lets content bleed through
+    <div className="fixed inset-0 bg-white overflow-hidden">
+
+      {/* Top stack — stays at top regardless of keyboard state */}
+      <div className="px-5 pt-14">
         <button
           onClick={onBack}
           aria-label="Go back"
@@ -62,16 +61,14 @@ export default function QuoteStep({ imageDataUrl: _imageDataUrl, onSubmit, onBac
         />
       </div>
 
-      {/* Pushes button to the bottom of the visible area */}
-      <div className="flex-1 min-h-0" />
-
-      {/* Continue — fades in on first keystroke, always at visible bottom */}
+      {/* Continue — fades in on first keystroke, tracks keyboard position */}
       <div
-        className="px-5 pb-8 shrink-0"
+        className="fixed left-0 right-0 px-5"
         style={{
+          bottom: btnBottom,
           opacity: hasText ? 1 : 0,
           pointerEvents: hasText ? "auto" : "none",
-          transition: "opacity 0.2s ease-out",
+          transition: "bottom 0.25s ease-out, opacity 0.2s ease-out",
         }}
       >
         <button

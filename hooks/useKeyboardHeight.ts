@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 
 /**
- * Returns the current on-screen keyboard height in pixels.
- * Uses the VisualViewport API — reliable on iOS Safari and Android Chrome.
- * Returns 0 when the keyboard is closed or the API is unavailable.
+ * Returns the on-screen keyboard height in pixels via VisualViewport.
+ * Uses window.innerHeight - vv.height which is reliable on iOS Safari and
+ * Android Chrome. Returns 0 when the keyboard is closed or API unavailable.
  */
 export function useKeyboardHeight(): number {
   const [height, setHeight] = useState(0);
@@ -11,18 +11,10 @@ export function useKeyboardHeight(): number {
   useEffect(() => {
     const vv = window.visualViewport;
     if (!vv) return;
-
-    const update = () => {
-      const kh = window.innerHeight - vv.height - vv.offsetTop;
-      setHeight(Math.max(0, kh));
-    };
-
+    const update = () =>
+      setHeight(Math.max(0, Math.round(window.innerHeight - vv.height)));
     vv.addEventListener("resize", update);
-    vv.addEventListener("scroll", update);
-    return () => {
-      vv.removeEventListener("resize", update);
-      vv.removeEventListener("scroll", update);
-    };
+    return () => vv.removeEventListener("resize", update);
   }, []);
 
   return height;
