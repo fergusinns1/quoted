@@ -16,54 +16,24 @@ interface Props {
 
 type ShareFeedback = "idle" | "shared" | "copied";
 
-// ─── Glassy action button ─────────────────────────────────────────────────────
-function ActionButton({
-  onClick,
-  "aria-label": label,
-  children,
-}: {
-  onClick: () => void;
-  "aria-label": string;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      aria-label={label}
-      className="w-12 h-12 rounded-full flex items-center justify-center active:scale-90 transition-transform"
-      style={{
-        background: "rgba(70,70,70,0.55)",
-        backdropFilter: "blur(20px)",
-        WebkitBackdropFilter: "blur(20px)",
-      }}
-    >
-      {children}
-    </button>
-  );
-}
-
 // ─── Main sheet ───────────────────────────────────────────────────────────────
 export default function QuoteDetailSheet({ quote: initialQuote, onClose, onQuoteUpdated }: Props) {
   const showToast = useToast();
   const sheetRef = useRef<HTMLDivElement>(null);
   const closingRef = useRef(false);
 
-  // Local copy so edits reflect immediately inside the sheet
   const [quote, setQuote] = useState(initialQuote);
 
-  // Entry animation
   const [entered, setEntered] = useState(false);
   useEffect(() => {
     const id = requestAnimationFrame(() => setEntered(true));
     return () => cancelAnimationFrame(id);
   }, []);
 
-  // Drag-to-dismiss state
   const [dragY, setDragY] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const dragStartY = useRef(0);
 
-  // Misc UI
   const [shareFeedback, setShareFeedback] = useState<ShareFeedback>("idle");
   const [showEdit, setShowEdit] = useState(false);
 
@@ -75,7 +45,7 @@ export default function QuoteDetailSheet({ quote: initialQuote, onClose, onQuote
     setTimeout(onClose, 380);
   }, [onClose]);
 
-  // ── Drag handlers ────────────────────────────────────────────────────────────
+  // ── Drag handlers ─────────────────────────────────────────────────────────
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     dragStartY.current = e.clientY;
     setIsDragging(true);
@@ -95,7 +65,7 @@ export default function QuoteDetailSheet({ quote: initialQuote, onClose, onQuote
     }
   };
 
-  // ── Actions ──────────────────────────────────────────────────────────────────
+  // ── Actions ───────────────────────────────────────────────────────────────
   const handleShare = async () => {
     const result = await shareQuoteCard(quote);
     if (result === "copied") {
@@ -133,6 +103,11 @@ export default function QuoteDetailSheet({ quote: initialQuote, onClose, onQuote
     ? "none"
     : "transform 0.38s cubic-bezier(0.32, 0.72, 0, 1)";
 
+  // Buttons fade in with the sheet, fade out as it's dragged down
+  const buttonOpacity = entered
+    ? Math.max(0, 1 - dragY / 120)
+    : 0;
+
   return (
     <>
       {/* ── Backdrop ── */}
@@ -146,11 +121,11 @@ export default function QuoteDetailSheet({ quote: initialQuote, onClose, onQuote
         onClick={dismiss}
       />
 
-      {/* ── Sheet ── note: transform creates a new stacking context, so any fixed
-           children (EditSheet) MUST be rendered outside this div ── */}
+      {/* ── Sheet ── transform creates a new stacking context; fixed children
+           (EditSheet, action buttons) must live OUTSIDE this div ── */}
       <div
         ref={sheetRef}
-        className="fixed inset-x-0 bottom-0 z-[48] overflow-hidden"
+        className="fixed inset-x-0 bottom-0 z-[49] overflow-hidden"
         style={{
           height: "88dvh",
           borderRadius: "44px 44px 0 0",
@@ -175,7 +150,7 @@ export default function QuoteDetailSheet({ quote: initialQuote, onClose, onQuote
         {/* Vignette */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/10 to-black/35" />
 
-        {/* ── Drag handle area ── */}
+        {/* ── Drag handle ── */}
         <div
           className="relative z-10 flex justify-center pt-3 pb-4 cursor-grab active:cursor-grabbing touch-none select-none"
           onPointerDown={handlePointerDown}
@@ -206,26 +181,57 @@ export default function QuoteDetailSheet({ quote: initialQuote, onClose, onQuote
             </span>
           </div>
         </div>
-
-        {/* ── Action buttons ── anchored to sheet bottom, stays above image */}
-        <div className="absolute bottom-10 inset-x-0 z-10 flex justify-center gap-5">
-          <ActionButton onClick={() => setShowEdit(true)} aria-label="Edit quote">
-            <Pencil size={18} strokeWidth={1.8} className="text-white" />
-          </ActionButton>
-          <ActionButton onClick={handleShare} aria-label="Share quote">
-            {shareFeedback !== "idle"
-              ? <Check size={18} strokeWidth={2} className="text-white" />
-              : <Share2 size={18} strokeWidth={1.8} className="text-white" />
-            }
-          </ActionButton>
-          <ActionButton onClick={handleSave} aria-label="Save to photos">
-            <ArrowDownToLine size={18} strokeWidth={1.8} className="text-white" />
-          </ActionButton>
-        </div>
       </div>
 
-      {/* ── EditSheet: rendered OUTSIDE the transformed div so that its own
-           `fixed` positioning resolves to the viewport, not the sheet ── */}
+      {/* ── Action buttons — outside the transformed div so fixed positioning
+           resolves to the viewport. Fade with the sheet; track drag. ── */}
+      <div
+        className="fixed inset-x-0 bottom-10 z-[50] flex justify-center gap-3 px-6 pointer-events-none"
+        style={{
+          opacity: buttonOpacity,
+          transition: isDragging ? "none" : "opacity 0.3s ease",
+        }}
+      >
+        {/* Edit */}
+        <button
+          onClick={() => setShowEdit(true)}
+          aria-label="Edit quote"
+          className="pointer-events-auto flex items-center gap-2 px-5 py-3.5 rounded-full active:scale-95 transition-transform"
+          style={{ background: "rgba(30,30,30,0.72)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}
+        >
+          <Pencil size={16} strokeWidth={1.8} className="text-white" />
+          <span className="text-white text-[14px] font-medium">Edit</span>
+        </button>
+
+        {/* Share */}
+        <button
+          onClick={handleShare}
+          aria-label="Share quote"
+          className="pointer-events-auto flex items-center gap-2 px-5 py-3.5 rounded-full active:scale-95 transition-transform"
+          style={{ background: "rgba(30,30,30,0.72)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}
+        >
+          {shareFeedback !== "idle"
+            ? <Check size={16} strokeWidth={2} className="text-white" />
+            : <Share2 size={16} strokeWidth={1.8} className="text-white" />
+          }
+          <span className="text-white text-[14px] font-medium">
+            {shareFeedback === "copied" ? "Copied" : "Share"}
+          </span>
+        </button>
+
+        {/* Save */}
+        <button
+          onClick={handleSave}
+          aria-label="Save to photos"
+          className="pointer-events-auto flex items-center gap-2 px-5 py-3.5 rounded-full active:scale-95 transition-transform"
+          style={{ background: "rgba(30,30,30,0.72)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}
+        >
+          <ArrowDownToLine size={16} strokeWidth={1.8} className="text-white" />
+          <span className="text-white text-[14px] font-medium">Save</span>
+        </button>
+      </div>
+
+      {/* ── EditSheet ── */}
       {showEdit && (
         <EditSheet
           initialText={quote.text}

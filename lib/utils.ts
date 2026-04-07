@@ -128,8 +128,117 @@ export function groupByMonth(quotes: QuoteRecord[]): MonthGroup[] {
  * - Large bold white quote text
  * - Dark frosted pills with white text (speaker + date)
  */
+// ─── Shared canvas text/pill renderer ────────────────────────────────────────
+
+function renderTextAndPills(
+  ctx: CanvasRenderingContext2D,
+  quote: QuoteRecord,
+  W: number,
+  H: number
+) {
+  const pad         = 72;
+  const quoteFontSz = 74;
+  const pillFontSz  = 36;
+  const pillH       = 58;
+  const pillR       = pillH / 2;
+  const lineH       = quoteFontSz * 1.28;
+  const bottomPad   = 80;
+  const pillGap     = 16;
+  const textPillGap = 28;
+
+  const font = (weight: number, size: number) =>
+    `${weight} ${size}px -apple-system, "Helvetica Neue", Arial, sans-serif`;
+
+  ctx.font = font(800, quoteFontSz);
+  const quoteStr = `\u201C${quote.text}\u201D`;
+  const maxTextW = W - pad * 2;
+  const words = quoteStr.split(" ");
+  const lines: string[] = [];
+  let cur = "";
+  for (const w of words) {
+    const test = cur ? cur + " " + w : w;
+    if (ctx.measureText(test).width > maxTextW && cur) {
+      lines.push(cur); cur = w;
+    } else { cur = test; }
+  }
+  if (cur) lines.push(cur);
+
+  ctx.font = font(500, pillFontSz);
+  const dateStr  = formatDate(quote.createdAt);
+  const speakerW = ctx.measureText(quote.speaker).width + pillR * 2;
+  const dateW    = ctx.measureText(dateStr).width + pillR * 2;
+
+  const pillY = H - bottomPad - pillH;
+  const textY = pillY - textPillGap - lines.length * lineH;
+
+  ctx.font = font(800, quoteFontSz);
+  ctx.fillStyle = "#ffffff";
+  ctx.textAlign = "left";
+  ctx.textBaseline = "top";
+  lines.forEach((l, i) => ctx.fillText(l, pad, textY + i * lineH));
+
+  const drawPill = (x: number, label: string, w: number) => {
+    ctx.beginPath();
+    ctx.moveTo(x + pillR, pillY);
+    ctx.arcTo(x + w, pillY, x + w, pillY + pillH, pillR);
+    ctx.arcTo(x + w, pillY + pillH, x, pillY + pillH, pillR);
+    ctx.arcTo(x, pillY + pillH, x, pillY, pillR);
+    ctx.arcTo(x, pillY, x + w, pillY, pillR);
+    ctx.closePath();
+    ctx.fillStyle = "rgba(28,28,28,0.62)";
+    ctx.fill();
+    ctx.font = font(500, pillFontSz);
+    ctx.fillStyle = "rgba(255,255,255,0.92)";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+    ctx.fillText(label, x + pillR, pillY + pillH / 2);
+  };
+
+  drawPill(pad, quote.speaker, speakerW);
+  drawPill(pad + speakerW + pillGap, dateStr, dateW);
+}
+
+// Maps each GRADIENTS entry to [fromColor, toColor] for canvas rendering
+const GRADIENT_CANVAS_COLORS: Record<string, [string, string]> = {
+  "from-rose-300 via-pink-200 to-orange-200":    ["#fda4af", "#fed7aa"],
+  "from-amber-300 via-yellow-200 to-lime-200":   ["#fcd34d", "#d9f99d"],
+  "from-sky-300 via-blue-200 to-indigo-200":     ["#7dd3fc", "#c7d2fe"],
+  "from-violet-300 via-purple-200 to-pink-200":  ["#c4b5fd", "#fbcfe8"],
+  "from-teal-300 via-emerald-200 to-cyan-200":   ["#5eead4", "#a5f3fc"],
+};
+
 export async function renderQuoteCard(quote: QuoteRecord): Promise<Blob | null> {
-  if (!quote.imageDataUrl) return null;
+  // Gradient-only quote — render a canvas with the matching gradient background
+  if (!quote.imageDataUrl) {
+    return new Promise((resolve) => {
+      const W = 1080, H = 1440, cornerR = 80;
+      const canvas = document.createElement("canvas");
+      canvas.width = W; canvas.height = H;
+      const ctx = canvas.getContext("2d")!;
+
+      // Rounded clip
+      ctx.beginPath();
+      ctx.moveTo(cornerR, 0);
+      ctx.arcTo(W, 0, W, H, cornerR); ctx.arcTo(W, H, 0, H, cornerR);
+      ctx.arcTo(0, H, 0, 0, cornerR); ctx.arcTo(0, 0, W, 0, cornerR);
+      ctx.closePath(); ctx.clip();
+
+      // Gradient background (bg-gradient-to-br)
+      const gradKey = gradientForId(quote.id);
+      const [fromColor, toColor] = GRADIENT_CANVAS_COLORS[gradKey] ?? ["#7dd3fc", "#c7d2fe"];
+      const bg = ctx.createLinearGradient(0, 0, W, H);
+      bg.addColorStop(0, fromColor); bg.addColorStop(1, toColor);
+      ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+
+      // Vignette
+      const vig = ctx.createLinearGradient(0, 0, 0, H);
+      vig.addColorStop(0, "rgba(0,0,0,0.35)"); vig.addColorStop(1, "rgba(0,0,0,0.50)");
+      ctx.fillStyle = vig; ctx.fillRect(0, 0, W, H);
+
+      renderTextAndPills(ctx, quote, W, H);
+      canvas.toBlob((blob) => resolve(blob), "image/png", 0.95);
+    });
+  }
 
   return new Promise((resolve) => {
     const img = new Image();
@@ -175,74 +284,7 @@ export async function renderQuoteCard(quote: QuoteRecord): Promise<Blob | null> 
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, W, H);
 
-      // ── Layout constants ──────────────────────────────────────────────────
-      const pad         = 72;                           // left/right margin
-      const quoteFontSz = 74;                           // large bold quote
-      const pillFontSz  = 36;                           // pill label
-      const pillH       = 58;                           // pill height
-      const pillR       = pillH / 2;                    // full-pill radius
-      const lineH       = quoteFontSz * 1.28;
-      const bottomPad   = 80;
-      const pillGap     = 16;
-      const textPillGap = 28;
-
-      // ── Word-wrap quote text ──────────────────────────────────────────────
-      const font = (weight: number, size: number) =>
-        `${weight} ${size}px -apple-system, "Helvetica Neue", Arial, sans-serif`;
-
-      ctx.font = font(800, quoteFontSz);
-      const quoteStr = `\u201C${quote.text}\u201D`;
-      const maxTextW = W - pad * 2;
-      const words = quoteStr.split(" ");
-      const lines: string[] = [];
-      let cur = "";
-      for (const w of words) {
-        const test = cur ? cur + " " + w : w;
-        if (ctx.measureText(test).width > maxTextW && cur) {
-          lines.push(cur); cur = w;
-        } else { cur = test; }
-      }
-      if (cur) lines.push(cur);
-
-      // ── Measure pill widths ───────────────────────────────────────────────
-      ctx.font = font(500, pillFontSz);
-      const dateStr  = formatDate(quote.createdAt);
-      const speakerW = ctx.measureText(quote.speaker).width + pillR * 2;
-      const dateW    = ctx.measureText(dateStr).width + pillR * 2;
-
-      // ── Y positions (anchored from bottom) ────────────────────────────────
-      const pillY = H - bottomPad - pillH;
-      const textY = pillY - textPillGap - lines.length * lineH;
-
-      // ── Draw quote text ───────────────────────────────────────────────────
-      ctx.font = font(800, quoteFontSz);
-      ctx.fillStyle = "#ffffff";
-      ctx.textAlign = "left";
-      ctx.textBaseline = "top";
-      lines.forEach((l, i) => ctx.fillText(l, pad, textY + i * lineH));
-
-      // ── Draw pills (dark frosted, white text) ─────────────────────────────
-      const drawPill = (x: number, label: string, w: number) => {
-        // dark semi-transparent background
-        ctx.beginPath();
-        ctx.moveTo(x + pillR, pillY);
-        ctx.arcTo(x + w, pillY, x + w, pillY + pillH, pillR);
-        ctx.arcTo(x + w, pillY + pillH, x, pillY + pillH, pillR);
-        ctx.arcTo(x, pillY + pillH, x, pillY, pillR);
-        ctx.arcTo(x, pillY, x + w, pillY, pillR);
-        ctx.closePath();
-        ctx.fillStyle = "rgba(28,28,28,0.62)";
-        ctx.fill();
-
-        ctx.font = font(500, pillFontSz);
-        ctx.fillStyle = "rgba(255,255,255,0.92)";
-        ctx.textAlign = "left";
-        ctx.textBaseline = "middle";
-        ctx.fillText(label, x + pillR, pillY + pillH / 2);
-      };
-
-      drawPill(pad, quote.speaker, speakerW);
-      drawPill(pad + speakerW + pillGap, dateStr, dateW);
+      renderTextAndPills(ctx, quote, W, H);
 
       canvas.toBlob((blob) => resolve(blob), "image/png", 0.95);
     };
